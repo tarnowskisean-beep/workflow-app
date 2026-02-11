@@ -33,7 +33,6 @@ interface WorkItem {
     assignee?: User | null
     updatedAt: Date
     driveLink: string | null
-    driveFileName?: string | null
     status: string
     taskType?: string | null
 }
@@ -84,8 +83,8 @@ export function FileExplorer({ data }: FileExplorerProps) {
 
         data.forEach(item => {
             // Determine name for the file: User requested "Underlying document should be the name of the google drive link document"
-            // We use the driveFileName if available (populated by backfill or API), otherwise fallback to task title.
-            const fileName = item.driveFileName || item.title
+            // Reverted to Task Title per user request to remove Drive integration.
+            const fileName = item.title
 
             if (item.projectId && item.project) {
                 if (!projectsMap.has(item.projectId)) {

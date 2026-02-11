@@ -67,8 +67,6 @@ model WorkItem {
   projectId          String?
   driveLink          String?
   driveLinkType      String?
-  driveFileName      String?
-  driveFileId        String?
   requiresDocument   Boolean           @default(false)
   isRecurring        Boolean           @default(false)
   recurrenceInterval String?
