@@ -1,0 +1,3 @@
+module.exports=[12240,a=>{"use strict";var b=a.i(40351);let c=(0,b.createServerReference)("606c4a5080886e51df4612ed481e375dbbea6efeea",b.callServer,void 0,b.findSourceMapURL,"addDocumentLink");a.s(["addDocumentLink",()=>c])},76708,a=>{"use strict";a.s([],10416),a.i(10416);var b=a.i(77294),c=a.i(30369),d=a.i(12240),e=a.i(40351);let f=(0,e.createServerReference)("4029096d674055419dc222a9725bbb7f671bbd253e",e.callServer,void 0,e.findSourceMapURL,"getWorkItems");var g=a.i(83606);a.s(["addDocumentLink",()=>d.addDocumentLink,"createTask",()=>b.createTask,"getWorkItems",()=>f,"updateTaskDetails",()=>g.updateTaskDetails,"updateTaskStatus",()=>c.updateTaskStatus],76708)}];
+
+//# sourceMappingURL=Desktop_worflow-app_actions_437a98ce._.js.map

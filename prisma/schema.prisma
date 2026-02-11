@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String           @id @default(cuid())
+  email             String           @unique
+  name              String?
+  password          String?
+  avatarUrl         String?
+  role              String           @default("ASSOCIATE")
+  billableRate      Float            @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  managerId         String?
+  approvals         ApprovalAction[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  associateProjects Project[]        @relation("ProjectAssociate")
+  seniorProjects    Project[]        @relation("ProjectSenior")
+  managedProjects   Project[]        @relation("ProjectManager")
+  timeEntries       TimeEntry[]
+  manager           User?            @relation("Manager", fields: [managerId], references: [id])
+  directReports     User[]           @relation("Manager")
+  tasks             WorkItem[]       @relation("AssignedTo")
+  projects          Project[]        @relation("ProjectUsers")
+}
+
+model Project {
+  id                String              @id @default(cuid())
+  name              String
+  code              String              @unique
+  logoUrl           String?
+  description       String?
+  managerId         String?
+  seniorId          String?
+  associateId       String?
+  allowedTaskTypes  String              @default("Bookkeeping,Audit,Meeting,990,General")
+  billableRate      Float?
+  managerRate       Float?
+  seniorRate        Float?
+  associateRate     Float?
+  isBillable        Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  associate         User?               @relation("ProjectAssociate", fields: [associateId], references: [id])
+  senior            User?               @relation("ProjectSenior", fields: [seniorId], references: [id])
+  manager           User?               @relation("ProjectManager", fields: [managerId], references: [id])
+  timeEntries       TimeEntry[]
+  workItems         WorkItem[]
+  assignedTemplates TaskTemplateGroup[] @relation("ProjectToTaskTemplateGroup")
+  users             User[]              @relation("ProjectUsers")
+}
+
+model WorkItem {
+  id                 String            @id @default(cuid())
+  title              String
+  description        String?
+  status             String            @default("OPEN")
+  priority           String            @default("P2")
+  projectId          String?
+  driveLink          String?
+  driveLinkType      String?
+  driveFileName      String?
+  driveFileId        String?
+  requiresDocument   Boolean           @default(false)
+  isRecurring        Boolean           @default(false)
+  recurrenceInterval String?
+  recurrenceDays     String?           // Comma separated days (e.g. "Mon,Tue")
+  recurrenceEnd      DateTime?
+  taskType           String?
+  workflowId         String?
+  currentStageId     String?
+  assigneeId         String?
+  dueDate            DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  approvals          ApprovalRequest[]
+  auditLogs          AuditLog[]
+  timeEntries        TimeEntry[]
+  assignee           User?             @relation("AssignedTo", fields: [assigneeId], references: [id])
+  project            Project?          @relation(fields: [projectId], references: [id])
+}
+
+model TaskTemplateGroup {
+  id               String         @id @default(cuid())
+  name             String
+  description      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  templates        TaskTemplate[]
+  assignedProjects Project[]      @relation("ProjectToTaskTemplateGroup")
+}
+
+model TaskTemplate {
+  id                 String            @id @default(cuid())
+  groupId            String
+  title              String
+  description        String?
+  priority           String            @default("P2")
+  relativeDueDays    Int?
+  requiresDocument   Boolean           @default(false)
+  assigneeRole       String?
+  taskType           String?
+  isRecurring        Boolean           @default(false)
+  recurrenceInterval String?
+  recurrenceDays     String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  group              TaskTemplateGroup @relation(fields: [groupId], references: [id])
+}
+
+model ApprovalRequest {
+  id            String           @id @default(cuid())
+  workItemId    String
+  status        String           @default("PENDING")
+  requestedById String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  actions       ApprovalAction[]
+  workItem      WorkItem         @relation(fields: [workItemId], references: [id])
+}
+
+model ApprovalAction {
+  id                String          @id @default(cuid())
+  approvalRequestId String
+  approverId        String
+  outcome           String
+  comment           String?
+  actedAt           DateTime        @default(now())
+  approver          User            @relation(fields: [approverId], references: [id])
+  approvalRequest   ApprovalRequest @relation(fields: [approvalRequestId], references: [id])
+}
+
+model TimeEntry {
+  id              String    @id @default(cuid())
+  userId          String
+  workItemId      String?
+  projectId       String?
+  driveLink       String?
+  durationSeconds Int
+  startedAt       DateTime
+  endedAt         DateTime?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  // ...
+  isBillable      Boolean   @default(true)
+  project         Project?  @relation(fields: [projectId], references: [id])
+  workItem        WorkItem? @relation(fields: [workItemId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
+}
+
+
+
+model AuditLog {
+  id         String    @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  actorId    String
+  metadata   String?
+  occurredAt DateTime  @default(now())
+  workItemId String?
+  workItem   WorkItem? @relation(fields: [workItemId], references: [id])
+  actor      User      @relation(fields: [actorId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}

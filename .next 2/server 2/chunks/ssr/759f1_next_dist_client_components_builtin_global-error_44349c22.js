@@ -1,0 +1,3 @@
+module.exports=[80448,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(27671);a.n(d("[project]/Desktop/worflow-app/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},41422,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(27671);a.n(d("[project]/Desktop/worflow-app/node_modules/next/dist/client/components/builtin/global-error.js"))},2841,a=>{"use strict";a.i(80448);var b=a.i(41422);a.n(b)}];
+
+//# sourceMappingURL=759f1_next_dist_client_components_builtin_global-error_44349c22.js.map

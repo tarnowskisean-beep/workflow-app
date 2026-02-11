@@ -1,0 +1,3 @@
+module.exports=[53475,a=>{a.v({className:"inter_786c1081-module__J60SBq__className",variable:"inter_786c1081-module__J60SBq__variable"})},86326,a=>{"use strict";var b=a.i(55744),c=a.i(53475);let d={className:c.default.className,style:{fontFamily:"'Inter', 'Inter Fallback'",fontStyle:"normal"}};function e({children:a}){return(0,b.jsx)("html",{lang:"en",suppressHydrationWarning:!0,children:(0,b.jsx)("body",{className:`${d.variable} font-sans antialiased`,suppressHydrationWarning:!0,children:a})})}null!=c.default.variable&&(d.variable=c.default.variable),a.s(["default",()=>e,"metadata",0,{title:"Agency OS",description:"Operating System for Modern Agencies"}],86326)}];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__1777aa56._.js.map
