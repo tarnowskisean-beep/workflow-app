@@ -20,8 +20,9 @@ export async function authenticate(
         await signIn("credentials", Object.fromEntries(formData))
         console.log("Action: Sign in successful (should not be reached if redirecting)")
     } catch (error) {
-        console.log("Action: Sign in error", error)
+        console.error("Action: Sign in error:", error)
         if (error instanceof AuthError) {
+            console.error("Action: AuthError type:", error.type)
             switch (error.type) {
                 case "CredentialsSignin":
                     return "Invalid credentials."
@@ -29,6 +30,7 @@ export async function authenticate(
                     return "Something went wrong."
             }
         }
+        console.error("Action: Re-throwing error (likely redirect)")
         throw error
     }
 }
