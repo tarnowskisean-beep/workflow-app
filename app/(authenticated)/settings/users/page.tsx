@@ -37,6 +37,13 @@ export default async function UsersSettingsPage() {
                     />
                 </CardContent>
             </Card>
+
+            <div className="p-4 rounded bg-muted/20 border text-xs font-mono text-muted-foreground">
+                <p>Debug Info:</p>
+                <p>Role: {session.user.role}</p>
+                <p>Projects Available: {projects.length}</p>
+                <p>Users Fetched: {users.length}</p>
+            </div>
         </div>
     )
 }

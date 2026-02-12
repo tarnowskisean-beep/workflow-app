@@ -24,7 +24,7 @@ export async function getProjects(query?: string, projectId?: string) {
         select: { role: true }
     })
 
-    const userRole = user?.role || session.user.role || "ASSOCIATE"
+    const userRole = (user?.role || session.user.role || "ASSOCIATE").toUpperCase()
     const isAdminOrManager = userRole === "ADMIN" || userRole === "MANAGER"
 
     try {

@@ -78,9 +78,9 @@ export function UserDialog({ open, onOpenChange, onSave, initialData, mode, allP
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>{mode === "create" ? "Add Team Member" : "Edit User"}</DialogTitle>
+                    <DialogTitle>{mode === "create" ? "Add Team Member" : "Modify User Details"}</DialogTitle>
                     <DialogDescription>
-                        {mode === "create" ? "Add a new user to the workspace." : "Update user details."}
+                        {mode === "create" ? "Add a new user to the workspace." : "Update details and project access."}
                     </DialogDescription>
                 </DialogHeader>
 
