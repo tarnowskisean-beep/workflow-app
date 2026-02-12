@@ -38,6 +38,7 @@ model Project {
   code              String              @unique
   logoUrl           String?
   description       String?
+  status            String              @default("ACTIVE") // ACTIVE, INACTIVE, ARCHIVED
   managerId         String?
   seniorId          String?
   associateId       String?

@@ -6,13 +6,17 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 import { ProjectSearch } from "@/components/projects/project-search"
+import { ClientFilter } from "@/components/projects/client-filter"
 
-export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ query?: string }> }) {
+export default async function ProjectsPage({ searchParams }: { searchParams: Promise<{ query?: string, projectId?: string }> }) {
     const session = await auth()
     if (!session?.user) return null
 
-    const { query } = await searchParams
-    const projects = await getProjects(query)
+    const { query, projectId } = await searchParams
+
+    // Fetch all projects for the filter, but use query/projectId for list
+    const allProjects = await getProjects()
+    const filteredProjects = await getProjects(query, projectId)
 
     return (
         <div className="space-y-6">
@@ -25,6 +29,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
                 </div>
                 <div className="flex items-center gap-2">
                     <ProjectSearch />
+                    <ClientFilter projects={allProjects} />
                     {(session.user.role === "ADMIN" || session.user.role === "MANAGER") && (
                         <Button asChild>
                             <Link href="/projects/new">New Project</Link>
@@ -34,7 +39,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {projects.map((project) => (
+                {filteredProjects.map((project) => (
                     <Link href={`/projects/${project.code}`} key={project.id}>
                         <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
                             <CardHeader>

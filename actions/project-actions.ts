@@ -14,7 +14,7 @@ const projectSchema = z.object({
 
 
 
-export async function getProjects(query?: string) {
+export async function getProjects(query?: string, projectId?: string) {
     const session = await auth()
     if (!session?.user?.id) return []
 
@@ -24,10 +24,11 @@ export async function getProjects(query?: string) {
         return await prisma.project.findMany({
             where: {
                 ...(isAdmin ? {} : { users: { some: { id: session.user.id } } }),
+                ...(projectId && projectId !== "all" ? { id: projectId } : {}), // Filter by specific project ID
                 ...(query ? {
                     OR: [
-                        { name: { contains: query } },
-                        { code: { contains: query } }
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { code: { contains: query, mode: 'insensitive' } }
                     ]
                 } : {})
             },
