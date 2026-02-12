@@ -104,7 +104,7 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
         setSaving(true)
 
         // Save General Details
-        await updateProjectDetails(project.code, {
+        const detailsRes = await updateProjectDetails(project.code, {
             name,
             description,
             status,
@@ -114,18 +114,33 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
             seniorRate: seniorRate ? parseFloat(seniorRate) : undefined,
             associateRate: associateRate ? parseFloat(associateRate) : undefined
         })
+        if (detailsRes.error) {
+            alert(`Failed to update details: ${detailsRes.error}`) // Simple alert for now, could be toast
+            setSaving(false)
+            return
+        }
 
         // Save Team & Templates
-        await updateProjectTeam(project.code, {
+        const teamRes = await updateProjectTeam(project.code, {
             managerId,
             seniorId,
             associateId,
             allowedTaskTypes,
             assignedTemplateIds
         })
+        if (teamRes.error) {
+            alert(`Failed to update team: ${teamRes.error}`)
+            setSaving(false)
+            return
+        }
 
         // Save Access List
-        await updateProjectAccess(project.code, selectedUserIds)
+        const accessRes = await updateProjectAccess(project.code, selectedUserIds)
+        if (accessRes.error) {
+            alert(`Failed to update access: ${accessRes.error}`)
+            setSaving(false)
+            return
+        }
 
         setSaving(false)
         setOpen(false)
@@ -163,7 +178,7 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
                 </DialogHeader>
 
                 <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="general">General</TabsTrigger>
                         <TabsTrigger value="team">Team</TabsTrigger>
                         <TabsTrigger value="templates">Templates</TabsTrigger>

@@ -17,9 +17,10 @@ type User = {
     email: string | null
     role: string
     avatarUrl: string | null
+    projects?: { id: string }[]
 }
 
-export function TeamManagement({ users, currentUserRole }: { users: User[], currentUserRole?: string }) {
+export function TeamManagement({ users, currentUserRole, allProjects = [] }: { users: User[], currentUserRole?: string, allProjects?: any[] }) {
     const { toast } = useToast()
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -142,6 +143,7 @@ export function TeamManagement({ users, currentUserRole }: { users: User[], curr
                 onSave={handleSave}
                 initialData={editingUser}
                 mode={editingUser ? "edit" : "create"}
+                allProjects={allProjects}
             />
         </Card>
     )

@@ -25,6 +25,9 @@ export async function getUsers() {
                 managerId: isAdminOrManager,
                 manager: isAdminOrManager ? {
                     select: { id: true, name: true }
+                } : false,
+                projects: isAdminOrManager ? {
+                    select: { id: true, name: true, code: true }
                 } : false
             },
             orderBy: { name: 'asc' }

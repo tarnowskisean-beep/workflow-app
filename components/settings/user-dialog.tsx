@@ -14,14 +14,16 @@ interface UserDialogProps {
     onSave: (formData: FormData) => Promise<void>
     initialData?: any
     mode: "create" | "edit"
+    allProjects?: any[]
 }
 
-export function UserDialog({ open, onOpenChange, onSave, initialData, mode }: UserDialogProps) {
+export function UserDialog({ open, onOpenChange, onSave, initialData, mode, allProjects = [] }: UserDialogProps) {
     const [pending, setPending] = useState(false)
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [role, setRole] = useState("ASSOCIATE")
     const [password, setPassword] = useState("")
+    const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
 
     useEffect(() => {
         if (open) {
@@ -30,14 +32,26 @@ export function UserDialog({ open, onOpenChange, onSave, initialData, mode }: Us
                 setEmail(initialData.email || "")
                 setRole(initialData.role || "ASSOCIATE")
                 setPassword("") // Don't show current password
+                setSelectedProjectIds(initialData.projects?.map((p: any) => p.id) || [])
             } else {
                 setName("")
                 setEmail("")
                 setRole("ASSOCIATE")
                 setPassword("")
+                setSelectedProjectIds([])
             }
         }
     }, [open, mode, initialData])
+
+    const handleProjectToggle = (projectId: string) => {
+        setSelectedProjectIds(prev => {
+            if (prev.includes(projectId)) {
+                return prev.filter(id => id !== projectId)
+            } else {
+                return [...prev, projectId]
+            }
+        })
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -48,6 +62,7 @@ export function UserDialog({ open, onOpenChange, onSave, initialData, mode }: Us
         formData.append("email", email)
         formData.append("role", role)
         if (password) formData.append("password", password)
+        selectedProjectIds.forEach(id => formData.append("projectIds", id))
 
         try {
             await onSave(formData)
@@ -106,6 +121,39 @@ export function UserDialog({ open, onOpenChange, onSave, initialData, mode }: Us
                                 <SelectItem value="ADMIN">Admin</SelectItem>
                             </SelectContent>
                         </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Project Access</Label>
+                        <div className="grid gap-2 max-h-[150px] overflow-y-auto border rounded-md p-2">
+                            {/* @ts-ignore */}
+                            {allProjects.length === 0 ? (
+                                <div className="text-sm text-center text-muted-foreground p-2">
+                                    No projects available.
+                                </div>
+                            ) : (
+                                // @ts-ignore
+                                allProjects.map((project) => (
+                                    <div key={project.id} className="flex items-center space-x-2 p-1 hover:bg-muted/50 rounded">
+                                        <input
+                                            type="checkbox"
+                                            id={`proj-${project.id}`}
+                                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked={selectedProjectIds.includes(project.id)}
+                                            onChange={() => handleProjectToggle(project.id)}
+                                        />
+                                        <label
+                                            htmlFor={`proj-${project.id}`}
+                                            className="flex-1 text-sm cursor-pointer select-none"
+                                        >
+                                            {project.name}
+                                            <span className="ml-1 text-xs text-muted-foreground">({project.code})</span>
+                                        </label>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Select projects this user can access.</p>
                     </div>
 
                     <div className="space-y-2">

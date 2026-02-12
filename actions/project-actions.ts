@@ -141,11 +141,13 @@ export async function updateProjectAccess(code: string, userIds: string[]) {
     }
 
     try {
+        const isAdmin = userRole === "ADMIN"
+
         // First verify user has access to this project
         const project = await prisma.project.findFirst({
             where: {
                 code,
-                users: { some: { id: session.user.id } }
+                ...(isAdmin ? {} : { users: { some: { id: session.user.id } } })
             }
         })
 

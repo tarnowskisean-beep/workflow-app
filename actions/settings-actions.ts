@@ -155,7 +155,10 @@ export async function addUser(formData: FormData) {
                 email,
                 role,
                 password: hashedPassword,
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+                projects: {
+                    connect: (formData.getAll("projectIds") as string[]).map(id => ({ id }))
+                }
             }
         })
         revalidatePath("/settings")
@@ -189,7 +192,10 @@ export async function updateUser(userId: string, formData: FormData) {
             data: {
                 name: name as string,
                 email: email as string,
-                role: role as string
+                role: role as string,
+                projects: {
+                    set: (formData.getAll("projectIds") as string[]).map(id => ({ id }))
+                }
             }
         })
         revalidatePath("/settings")

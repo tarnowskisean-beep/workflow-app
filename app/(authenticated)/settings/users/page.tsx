@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { getUsers } from "@/actions/user-actions"
+import { getProjects } from "@/actions/project-actions"
 import { TeamManagement } from "@/components/settings/team-management"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -10,6 +11,7 @@ export default async function UsersSettingsPage() {
     // Fetch all users with hierarchy info
     // @ts-ignore
     const users = await getUsers()
+    const projects = await getProjects()
 
     return (
         <div className="space-y-6">
@@ -28,7 +30,7 @@ export default async function UsersSettingsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <TeamManagement users={users} />
+                    <TeamManagement users={users} allProjects={projects} />
                 </CardContent>
             </Card>
         </div>
