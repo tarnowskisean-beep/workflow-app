@@ -8,6 +8,49 @@ import { redirect } from "next/navigation"
 import { addDays, addWeeks, addMonths, addQuarters, addYears } from "date-fns"
 import { logSecurityEvent } from "@/lib/audit"
 
+// Helper: Verify User Access to Project
+async function verifyProjectAccess(projectId: string, userId: string) {
+    // 1. Check if user is Admin or Manager (Global access for now, or check specific manager role)
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    if (user?.role === "ADMIN") return true;
+
+    // 2. Check strict membership
+    const project = await prisma.project.findFirst({
+        where: {
+            id: projectId,
+            users: { some: { id: userId } }
+        }
+    })
+    return !!project
+}
+
+// Helper: Verify User Access to Task (for Editing)
+async function verifyTaskAccess(taskId: string, userId: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
+    if (user?.role === "ADMIN") return true;
+
+    const task = await prisma.workItem.findUnique({
+        where: { id: taskId },
+        include: { project: { include: { users: { select: { id: true } } } } }
+    })
+
+    if (!task) return false
+
+    // 1. Assignee can edit
+    if (task.assigneeId === userId) return true
+
+    // 2. Project Manager/Senior can edit (implied by project membership + role check if needed)
+    // For simplicity: If user is in the project, they can edit (collaborative)
+    // OR restricting to Manager/Senior?
+    // Let's stick to: Project Member can edit.
+    if (task.project) {
+        const isMember = task.project.users.some(u => u.id === userId)
+        if (isMember) return true
+    }
+
+    return false
+}
+
 // Using a local schema since the one in lib/schemas might be separate
 const createTaskSchema = z.object({
     title: z.string().min(1),
@@ -67,6 +110,11 @@ export async function createTask(formData: FormData) {
         assigneeId: formData.get("assigneeId") === "me" ? session.user.id : (formData.get("assigneeId") === "none" ? null : formData.get("assigneeId")),
     }
 
+    if (rawData.projectId) {
+        const canAccess = await verifyProjectAccess(rawData.projectId as string, session.user.id)
+        if (!canAccess) return { success: false, message: "Unauthorized project access" }
+    }
+
     try {
         const validated = createTaskSchema.parse(rawData)
 
@@ -113,6 +161,9 @@ export async function createTask(formData: FormData) {
 export async function updateTaskStatus(taskId: string, newStatus: string) {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+
+    const canAccess = await verifyTaskAccess(taskId, session.user.id)
+    if (!canAccess) return { success: false, message: "Unauthorized access to task" }
 
     try {
         const task = await prisma.workItem.findUnique({
@@ -213,6 +264,9 @@ function calculateNextDueDate(currentDate: Date, interval: string, days?: string
 export async function addDocumentLink(taskId: string, link: string) {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+
+    const canAccess = await verifyTaskAccess(taskId, session.user.id)
+    if (!canAccess) return { success: false, message: "Unauthorized access to task" }
 
     // Basic URL validation
     const urlResult = z.string().url().safeParse(link)
@@ -332,6 +386,9 @@ export async function getWorkItems(filters?: {
 export async function updateTaskDetails(taskId: string, formData: FormData) {
     const session = await auth()
     if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+
+    const canAccess = await verifyTaskAccess(taskId, session.user.id)
+    if (!canAccess) return { success: false, message: "Unauthorized access to task" }
 
     try {
         const rawData = {

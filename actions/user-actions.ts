@@ -10,18 +10,22 @@ export async function getUsers() {
     if (!session?.user?.id) return []
 
     try {
+        const currentUser = await prisma.user.findUnique({ where: { id: session.user.id } })
+        const isAdminOrManager = currentUser?.role === "ADMIN" || currentUser?.role === "MANAGER"
+
         // @ts-ignore
         const users = await prisma.user.findMany({
             select: {
                 id: true,
                 name: true,
-                email: true,
                 avatarUrl: true,
-                role: true,
-                managerId: true,
-                manager: {
+                // Only return sensitive fields for admins/managers
+                email: isAdminOrManager,
+                role: isAdminOrManager,
+                managerId: isAdminOrManager,
+                manager: isAdminOrManager ? {
                     select: { id: true, name: true }
-                }
+                } : false
             },
             orderBy: { name: 'asc' }
         })
