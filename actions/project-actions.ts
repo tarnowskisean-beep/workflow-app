@@ -32,7 +32,7 @@ export async function getProjects(query?: string, projectId?: string) {
                     ]
                 } : {})
             },
-            orderBy: { updatedAt: "desc" },
+            orderBy: { name: "asc" },
             include: {
                 _count: {
                     select: { workItems: true }
