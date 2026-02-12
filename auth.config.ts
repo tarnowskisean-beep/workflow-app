@@ -8,8 +8,8 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user
             const isLoginPage = nextUrl.pathname.startsWith('/login')
 
-            // Define public pages (only login for now)
-            const isPublicPage = isLoginPage
+            // Define public pages
+            const isPublicPage = isLoginPage || nextUrl.pathname.startsWith('/debug-page') || nextUrl.pathname.startsWith('/api/debug-db')
 
             console.log("Middleware Auth Check:", {
                 pathname: nextUrl.pathname,
