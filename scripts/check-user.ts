@@ -1,29 +1,29 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+
+import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
 async function main() {
-    const email = 'user@compass.com'
-    const password = 'password123'
+    console.log("Checking for user...")
+    const email = "starnowski@compassprofessional.com"
+    const user = await prisma.user.findUnique({
+        where: { email },
+    })
 
-    const user = await prisma.user.findUnique({ where: { email } })
-    console.log('User found:', user)
-
-    if (user && user.password) {
-        const match = await bcrypt.compare(password, user.password)
-        console.log('Password match:', match)
+    if (user) {
+        console.log("User found:", user)
+        console.log("Has password:", !!user.password)
+        console.log("Role:", user.role)
     } else {
-        console.log('User has no password or not found')
+        console.log("User NOT found")
     }
 }
 
 main()
-    .then(async () => {
-        await prisma.$disconnect()
-    })
-    .catch(async (e) => {
+    .catch((e) => {
         console.error(e)
-        await prisma.$disconnect()
         process.exit(1)
+    })
+    .finally(async () => {
+        await prisma.$disconnect()
     })

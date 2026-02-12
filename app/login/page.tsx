@@ -18,13 +18,9 @@ export default function LoginPage() {
         const formData = new FormData(event.currentTarget)
 
         startTransition(async () => {
-            try {
-                const result = await authenticate(undefined, formData)
-                if (result) {
-                    setErrorMessage(result)
-                }
-            } catch (error) {
-                setErrorMessage("An unexpected error occurred. Please try again.")
+            const result = await authenticate(undefined, formData)
+            if (result) {
+                setErrorMessage(result)
             }
         })
     }
