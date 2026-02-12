@@ -15,6 +15,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         Credentials({
             async authorize(credentials) {
                 console.log("Auth.ts: Authorizing with credentials:", JSON.stringify(credentials, null, 2))
+                // Triggering new deployment to ensure debug-db is present
                 try {
                     const parsedCredentials = z
                         .object({ email: z.string().email(), password: z.string().min(6) })
