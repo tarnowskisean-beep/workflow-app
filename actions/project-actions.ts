@@ -18,12 +18,12 @@ export async function getProjects(query?: string, projectId?: string) {
     const session = await auth()
     if (!session?.user?.id) return []
 
-    const isAdmin = session.user.role === "ADMIN"
+    const isAdminOrManager = session.user.role === "ADMIN" || session.user.role === "MANAGER"
 
     try {
         return await prisma.project.findMany({
             where: {
-                ...(isAdmin ? {} : { users: { some: { id: session.user.id } } }),
+                ...(isAdminOrManager ? {} : { users: { some: { id: session.user.id } } }),
                 ...(projectId && projectId !== "all" ? { id: projectId } : {}), // Filter by specific project ID
                 ...(query ? {
                     OR: [
