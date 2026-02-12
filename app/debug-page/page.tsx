@@ -1,5 +1,5 @@
 
-import { prism } from "@/lib/prisma" // Typo intentional to check compilation? No, wait.
+
 // Actually I simply want to render server-side props.
 
 import { prisma } from "@/lib/prisma"
