@@ -30,7 +30,11 @@ export default async function UsersSettingsPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <TeamManagement users={users} allProjects={projects} />
+                    <TeamManagement
+                        users={users}
+                        allProjects={projects}
+                        currentUserRole={session.user.role}
+                    />
                 </CardContent>
             </Card>
         </div>
