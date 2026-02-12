@@ -18,7 +18,14 @@ export async function getProjects(query?: string, projectId?: string) {
     const session = await auth()
     if (!session?.user?.id) return []
 
-    const isAdminOrManager = session.user.role === "ADMIN" || session.user.role === "MANAGER"
+    // Fetch user from DB to get authoritative role
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true }
+    })
+
+    const userRole = user?.role || session.user.role || "ASSOCIATE"
+    const isAdminOrManager = userRole === "ADMIN" || userRole === "MANAGER"
 
     try {
         return await prisma.project.findMany({
