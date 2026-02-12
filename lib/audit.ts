@@ -6,6 +6,7 @@ export type AuditAction =
     | "PROJECT_CREATED"
     | "PROJECT_UPDATED"
     | "PROJECT_ACCESS_UPDATED"
+    | "PROJECT_DELETED"
     | "TASK_CREATED"
     | "TASK_UPDATED"
     | "TASK_DELETED"

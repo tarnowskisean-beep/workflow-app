@@ -219,6 +219,7 @@ export async function updateProjectDetails(
     details: {
         name: string,
         description?: string,
+        status?: string, // ACTIVE, INACTIVE, ARCHIVED
         isBillable: boolean,
         billableRate?: number,
         managerRate?: number,
@@ -240,6 +241,7 @@ export async function updateProjectDetails(
             data: {
                 name: details.name,
                 description: details.description,
+                status: details.status || "ACTIVE",
                 isBillable: details.isBillable,
                 billableRate: details.billableRate,
                 managerRate: details.managerRate,
@@ -258,5 +260,33 @@ export async function updateProjectDetails(
     } catch (error) {
         console.error("Failed to update project details:", error)
         return { error: "Failed to update project details" }
+    }
+}
+
+export async function deleteProject(code: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+
+    const userRole = session.user.role
+    if (userRole !== "ADMIN") {
+        return { error: "Only Admins can delete projects." }
+    }
+
+    try {
+        // Log before deletion for audit trail
+        await logSecurityEvent("PROJECT_DELETED", "PROJECT", code, {
+            deletedBy: session.user.email
+        })
+
+        await prisma.project.delete({
+            where: { code }
+        })
+
+        revalidatePath("/projects")
+        return { success: true }
+    } catch (error) {
+        console.error("Failed to delete project:", error)
+        // Check for foreign key constraints if needed, but cascade might handle it or error out
+        return { error: "Failed to delete project. Check if it has related data." }
     }
 }

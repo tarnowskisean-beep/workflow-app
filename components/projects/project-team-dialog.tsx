@@ -1,6 +1,6 @@
 "use client"
 
-import { updateProjectTeam, updateProjectAccess, updateProjectDetails } from "@/actions/project-actions"
+import { updateProjectTeam, updateProjectAccess, updateProjectDetails, deleteProject } from "@/actions/project-actions"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -12,7 +12,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { Project, User } from "@prisma/client"
-import { UsersIcon, Check, Settings } from "lucide-react"
+import { UsersIcon, Check, Settings, CircleAlert } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Label } from "@/components/ui/label"
@@ -30,6 +30,7 @@ type ProjectWithTeam = Project & {
     associate: User | null,
     allowedTaskTypes: string
     assignedTemplates: { id: string }[]
+    status?: string // Add optional status to fix lint if Prisma type lags
 }
 
 interface TemplateGroup {
@@ -52,6 +53,7 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
     // General State
     const [name, setName] = useState(project.name)
     const [description, setDescription] = useState(project.description || "")
+    const [status, setStatus] = useState(project.status || "ACTIVE")
     const [isBillable, setIsBillable] = useState(project.isBillable ?? true)
 
     // Rates State
@@ -105,6 +107,7 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
         await updateProjectDetails(project.code, {
             name,
             description,
+            status,
             isBillable,
             billableRate: billableRate ? parseFloat(billableRate) : undefined,
             managerRate: managerRate ? parseFloat(managerRate) : undefined,
@@ -127,6 +130,20 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
         setSaving(false)
         setOpen(false)
         router.refresh()
+    }
+
+    const handleDelete = async () => {
+        if (!confirm("Are you sure you want to delete this project? This action cannot be undone.")) return
+
+        setSaving(true)
+        const result = await deleteProject(project.code)
+
+        if (result.error) {
+            alert(result.error)
+            setSaving(false)
+        } else {
+            router.push("/projects")
+        }
     }
 
     return (
@@ -152,6 +169,7 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
                         <TabsTrigger value="templates">Templates</TabsTrigger>
                         <TabsTrigger value="types">Types</TabsTrigger>
                         <TabsTrigger value="access">Access</TabsTrigger>
+                        <TabsTrigger value="danger" className="text-destructive data-[state=active]:text-destructive">Danger</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="general" className="space-y-4 py-4">
@@ -173,6 +191,20 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
                                     placeholder="Project description and notes..."
                                     className="resize-none min-h-[100px]"
                                 />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label>Status</Label>
+                                <Select value={status} onValueChange={setStatus}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ACTIVE">Active</SelectItem>
+                                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                        <SelectItem value="ARCHIVED">Archived</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="flex items-center space-x-2 py-2">
@@ -360,6 +392,25 @@ export function ProjectSettingsDialog({ project, allUsers, templateGroups = [] }
                         <p className="text-xs text-muted-foreground mt-2">
                             Selected users can view this project.
                         </p>
+                    </TabsContent>
+
+                    <TabsContent value="danger" className="py-4 space-y-4">
+                        <div className="border border-destructive/50 rounded-lg p-4 bg-destructive/5 space-y-4">
+                            <div className="flex items-start gap-4">
+                                <CircleAlert className="h-6 w-6 text-destructive mt-0.5" />
+                                <div>
+                                    <h3 className="font-semibold text-destructive">Delete Project</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Permanently delete this project and all associated data. This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex justify-end">
+                                <Button variant="destructive" onClick={handleDelete} disabled={saving}>
+                                    {saving ? "Deleting..." : "Delete Project"}
+                                </Button>
+                            </div>
+                        </div>
                     </TabsContent>
                 </Tabs>
 
