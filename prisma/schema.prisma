@@ -42,7 +42,7 @@ model Project {
   managerId         String?
   seniorId          String?
   associateId       String?
-  allowedTaskTypes  String              @default("Bookkeeping,Audit,Meeting,990,General")
+  allowedTaskTypes  String              @default("Bookkeeping,Accounts Payable,990,Reconciliation,Budget,Ad Hoc Reporting,1099s,Audit,Development,Meeting,Project Management,Secretarial,Emails,Accounts Receivable,Standard Reporting,Notarization,Fractional CFO,Administrative")
   billableRate      Float?
   managerRate       Float?
   seniorRate        Float?
