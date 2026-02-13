@@ -1,6 +1,7 @@
 "use client"
 
 import { format, isSameDay, startOfWeek, addDays } from "date-fns"
+import { Button } from "@/components/ui/button"
 import { TimeEntryList } from "./time-entry-list"
 import { cn } from "@/lib/utils"
 import { Play } from "lucide-react"
