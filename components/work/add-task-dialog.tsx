@@ -29,26 +29,22 @@ export function AddTaskDialog({ projects = [], users = [], defaultProjectId }: {
     const [recurrenceInterval, setRecurrenceInterval] = useState<RecurrenceInterval>(null)
     const [recurrenceDays, setRecurrenceDays] = useState<string[]>([])
     const [selectedProjectId, setSelectedProjectId] = useState<string>(defaultProjectId || "")
+    const [selectedTaskType, setSelectedTaskType] = useState<string>("")
 
     const getTaskTypesForProject = (pid: string) => {
         const proj = projects.find(p => p.id === pid)
-        // Debug
-        console.log("AddTaskDialog - getTaskTypesForProject pid:", pid)
-        console.log("AddTaskDialog - Found Project:", proj)
-        console.log("AddTaskDialog - Allowed Types Raw:", proj?.allowedTaskTypes)
-
         if (!proj || !proj.allowedTaskTypes) return []
         const types = proj.allowedTaskTypes.split(",").map(t => t.trim()).filter(Boolean)
-        console.log("AddTaskDialog - Parsed Types:", types)
         return types
     }
 
-    // Debug Initial Props
-    console.log("AddTaskDialog - Props Projects:", projects)
-    console.log("AddTaskDialog - Default Project ID:", defaultProjectId)
-
     async function handleSubmit(formData: FormData) {
         setPending(true)
+
+        // Ensure taskType is set in formData if controlled
+        if (selectedTaskType) {
+            formData.set("taskType", selectedTaskType)
+        }
 
         // Handle recurrence data
         if (recurrenceInterval) {
@@ -67,6 +63,7 @@ export function AddTaskDialog({ projects = [], users = [], defaultProjectId }: {
             setOpen(false)
             // Reset form details if needed, but keep defaultProjectId if present
             if (!defaultProjectId) setSelectedProjectId("")
+            setSelectedTaskType("") // Reset type
             setRecurrenceInterval(null)
             setRecurrenceDays([])
         } else {
@@ -197,7 +194,12 @@ export function AddTaskDialog({ projects = [], users = [], defaultProjectId }: {
                         selectedProjectId && selectedProjectId !== "none" && (
                             <div className="space-y-2">
                                 <Label htmlFor="taskType">Task Type <span className="text-red-500">*</span></Label>
-                                <Select name="taskType" required>
+                                <Select
+                                    name="taskType"
+                                    required
+                                    value={selectedTaskType}
+                                    onValueChange={setSelectedTaskType}
+                                >
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select Type..." />
                                     </SelectTrigger>
