@@ -39,6 +39,11 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
     // Initialize state when entryToEdit changes or dialog opens
     useEffect(() => {
+        console.log("TimeLogDialog - Projects:", projects)
+        const currentProject = projects.find(p => p.id === selectedProjectId)
+        console.log("TimeLogDialog - Selected Project Data:", currentProject)
+        console.log("TimeLogDialog - Allowed Task Types:", currentProject?.allowedTaskTypes)
+
         if (entryToEdit) {
             setDate(new Date(entryToEdit.startedAt).toISOString().split('T')[0])
             setSelectedProjectId(entryToEdit.projectId || "")
@@ -63,7 +68,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 setSelectedTaskId("")
             }
         }
-    }, [entryToEdit, task, initialValues, open])
+    }, [entryToEdit, task, initialValues, open, projects, selectedProjectId])
 
     async function handleStartTimer() {
         if (!selectedProjectId) {
