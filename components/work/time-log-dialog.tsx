@@ -30,9 +30,35 @@ interface TimeLogDialogProps {
 
 export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects = [], entryToEdit, initialValues, defaultDate, onComplete }: TimeLogDialogProps) {
     const { startTimer, activeTimer } = useTimer()
-    // ... existing state
+    const [loading, setLoading] = useState(false)
+    const [date, setDate] = useState<string>(defaultDate || new Date().toISOString().split('T')[0])
 
-    // ... useEffect
+    // State for selection if generic
+    const [selectedProjectId, setSelectedProjectId] = useState<string>("")
+    const [selectedTaskId, setSelectedTaskId] = useState<string>("")
+
+    // Initialize state when entryToEdit changes or dialog opens
+    useEffect(() => {
+        if (entryToEdit) {
+            setDate(new Date(entryToEdit.startedAt).toISOString().split('T')[0])
+            setSelectedProjectId(entryToEdit.projectId || "")
+            setSelectedTaskId(entryToEdit.workItemId || "")
+        } else if (initialValues) {
+            setDate(new Date().toISOString().split('T')[0]) // Default to today for new entry
+            setSelectedProjectId(initialValues.projectId || "")
+            setSelectedTaskId(initialValues.taskId || "")
+        } else if (task) {
+            setSelectedProjectId(task.projectId || "")
+            setSelectedTaskId(task.id)
+        } else {
+            // Reset if creating new
+            // But don't reset date if passed as defaultDate
+            if (open && !entryToEdit) {
+                setSelectedProjectId("")
+                setSelectedTaskId("")
+            }
+        }
+    }, [entryToEdit, task, initialValues, open])
 
     async function handleStartTimer() {
         if (!selectedProjectId) {
