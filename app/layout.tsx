@@ -22,6 +22,8 @@ export const metadata: Metadata = {
 
 import { Toaster } from "@/components/ui/toaster";
 
+import { Providers } from "@/app/providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,8 +35,10 @@ export default function RootLayout({
         className={`${interTight.variable} ${oldStandard.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        {children}
-        <Toaster />
+        <Providers>
+          {children}
+          <Toaster />
+        </Providers>
       </body>
     </html>
   );

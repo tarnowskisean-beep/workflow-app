@@ -62,6 +62,10 @@ export async function logTime(formData: FormData) {
                 projectId: projectId,
                 durationSeconds,
                 startedAt,
+                // Default endedAt for manual entry is same day or calculated? 
+                // Typically manual entry implies "done". Schema has optional endedAt.
+                // If duration is set, endedAt is implied startedAt + duration
+                endedAt: new Date(startedAt.getTime() + durationSeconds * 1000),
                 notes,
                 isBillable
             },
@@ -133,7 +137,8 @@ export async function getWeeklyEntries(date: Date) {
     return await prisma.timeEntry.findMany({
         where: {
             userId: session.user.id,
-            startedAt: { gte: start, lte: end }
+            startedAt: { gte: start, lte: end },
+            endedAt: { not: null } // Exclude active timers from list view if preferred, or include them? Let's exclude for now.
         },
         include: {
             project: true,
@@ -148,7 +153,7 @@ export async function getRecentTimeEntries() {
     if (!session?.user?.id) return []
 
     return await prisma.timeEntry.findMany({
-        where: { userId: session.user.id },
+        where: { userId: session.user.id, endedAt: { not: null } },
         orderBy: { startedAt: "desc" },
         take: 20,
         include: { workItem: { select: { title: true, project: { select: { name: true } } } } }
@@ -165,7 +170,8 @@ export async function getWeeklySummary() {
     const entries = await prisma.timeEntry.findMany({
         where: {
             userId: session.user.id,
-            startedAt: { gte: start }
+            startedAt: { gte: start },
+            endedAt: { not: null }
         }
     })
 
@@ -173,3 +179,104 @@ export async function getWeeklySummary() {
     return { totalSeconds, count: entries.length }
 }
 
+// --- Live Timer Actions ---
+
+export async function startTimer(projectId: string, workItemId?: string, notes?: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+
+    // Check for existing running timer
+    const running = await prisma.timeEntry.findFirst({
+        where: { userId: session.user.id, endedAt: null }
+    })
+
+    if (running) {
+        return { error: "Timer already running" }
+    }
+
+    try {
+        // Determine billable
+        let isBillable = true
+        if (projectId) {
+            const project = await prisma.project.findUnique({ where: { id: projectId }, select: { isBillable: true } })
+            if (project) isBillable = project.isBillable
+        }
+
+        const entry = await prisma.timeEntry.create({
+            data: {
+                userId: session.user.id,
+                projectId,
+                workItemId,
+                notes,
+                startedAt: new Date(),
+                endedAt: null,
+                durationSeconds: 0,
+                isBillable
+            },
+            include: { workItem: true, project: true }
+        })
+
+        revalidatePath("/time")
+        return { success: true, entry }
+    } catch (error) {
+        console.error("Start timer error:", error)
+        return { error: "Failed to start timer" }
+    }
+}
+
+export async function stopTimer(entryId: string, notes?: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+
+    try {
+        const entry = await prisma.timeEntry.findUnique({ where: { id: entryId } })
+        if (!entry) return { error: "Entry not found" }
+        if (entry.userId !== session.user.id) return { error: "Unauthorized" }
+
+        const endedAt = new Date()
+        const durationSeconds = Math.round((endedAt.getTime() - entry.startedAt.getTime()) / 1000)
+
+        // Only update notes if provided string is not undefined/null (allows saving notes on stop)
+        const updateData: any = {
+            endedAt,
+            durationSeconds
+        }
+        if (notes !== undefined) updateData.notes = notes
+
+        await prisma.timeEntry.update({
+            where: { id: entryId },
+            data: updateData
+        })
+
+        revalidatePath("/time")
+        revalidatePath("/dashboard")
+        return { success: true }
+    } catch (error) {
+        return { error: "Failed to stop timer" }
+    }
+}
+
+export async function discardTimer(entryId: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { error: "Unauthorized" }
+
+    try {
+        await prisma.timeEntry.delete({ where: { id: entryId } })
+        revalidatePath("/time")
+        return { success: true }
+    } catch (error) {
+        return { error: "Failed to discard timer" }
+    }
+}
+
+export async function getActiveTimer() {
+    const session = await auth()
+    if (!session?.user?.id) return null
+
+    const entry = await prisma.timeEntry.findFirst({
+        where: { userId: session.user.id, endedAt: null },
+        include: { workItem: true, project: true }
+    })
+
+    return entry
+}

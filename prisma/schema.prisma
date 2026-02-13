@@ -144,7 +144,7 @@ model TimeEntry {
   workItemId      String?
   projectId       String?
   driveLink       String?
-  durationSeconds Int
+  durationSeconds Int       @default(0)
   startedAt       DateTime
   endedAt         DateTime?
   notes           String?
