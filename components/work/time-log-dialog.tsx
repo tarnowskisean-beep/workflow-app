@@ -66,7 +66,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
             setSelectedTaskType(initialValues.taskId || "")
         } else if (task) {
             setSelectedProjectId(task.projectId || "")
-            setSelectedTaskType("")
+            setSelectedTaskType(task.taskType || "")
         } else {
             // Reset if creating new
             if (open && !entryToEdit) {
@@ -177,10 +177,10 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 </DialogHeader>
                 <form action={handleSubmit} className="space-y-4">
                     {/* Project/Task Selection - Show if not pre-bound to a SPECIFIC task prop (contextual add) */}
-                    {!task && (
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>Project</Label>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Project</Label>
+                            {!task ? (
                                 <Select
                                     value={selectedProjectId}
                                     onValueChange={(val) => {
@@ -199,49 +199,59 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                         ))}
                                     </SelectContent>
                                 </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Task Type</Label>
-                                <Select
-                                    value={selectedTaskType}
-                                    onValueChange={setSelectedTaskType}
-                                    disabled={!selectedProjectId}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task type"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(() => {
-                                            const project = projects.find(p => p.id === selectedProjectId)
-                                            if (!project || !project.allowedTaskTypes) {
-                                                return <SelectItem value="none" disabled>No types defined for project</SelectItem>
-                                            }
-
-                                            const types = project.allowedTaskTypes.split(',').map((t: string) => t.trim()).filter(Boolean)
-
-                                            if (types.length === 0) {
-                                                return <SelectItem value="none" disabled>No types defined for project</SelectItem>
-                                            }
-
-                                            return types.map((type: string) => (
-                                                <SelectItem key={type} value={type}>
-                                                    {type}
-                                                </SelectItem>
-                                            ))
-                                        })()}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                            ) : (
+                                <div className="text-sm font-medium p-2 bg-muted rounded border">
+                                    {task.project?.name || "Unknown Project"}
+                                    <div className="text-xs text-muted-foreground font-normal mt-0.5">{task.title}</div>
+                                </div>
+                            )}
                         </div>
-                    )}
 
-                    {/* Read-only display ONLY if strictly bound to a task prop (contextual add) */}
-                    {task && (
-                        <div className="text-sm text-muted-foreground p-2 bg-muted rounded">
-                            {task.title}
+                        <div className="space-y-2">
+                            <Label>Task Type</Label>
+                            <Select
+                                value={selectedTaskType}
+                                onValueChange={setSelectedTaskType}
+                                disabled={!selectedProjectId}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task type"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {(() => {
+                                        // Try to find project in list, OR fallback to task.project if available
+                                        let project = projects.find(p => p.id === selectedProjectId)
+
+                                        // Fallback for when 'projects' prop is empty but 'task' has nested project data
+                                        if (!project && task && task.project && task.projectId === selectedProjectId) {
+                                            project = task.project
+                                        }
+
+                                        if (!project || !project.allowedTaskTypes) {
+                                            return <SelectItem value="none" disabled>No types defined for project</SelectItem>
+                                        }
+
+                                        // Handle both comma-string (DB) or array (if pre-parsed, though unlikely here)
+                                        const types = typeof project.allowedTaskTypes === 'string'
+                                            ? project.allowedTaskTypes.split(',').map((t: string) => t.trim()).filter(Boolean)
+                                            : []
+
+                                        if (types.length === 0) {
+                                            return <SelectItem value="none" disabled>No types defined for project</SelectItem>
+                                        }
+
+                                        return types.map((type: string) => (
+                                            <SelectItem key={type} value={type}>
+                                                {type}
+                                            </SelectItem>
+                                        ))
+                                    })()}
+                                </SelectContent>
+                            </Select>
                         </div>
-                    )}
+                    </div>
+
+
 
 
                     <div className="grid grid-cols-2 gap-4">
