@@ -82,6 +82,7 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
 
         return {
             date: dateStr,
+            fullDate: format(day, 'yyyy-MM-dd'),
             hours: parseFloat((dailySeconds / 3600).toFixed(1))
         }
     })

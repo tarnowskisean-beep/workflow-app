@@ -1,32 +1,37 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from "recharts"
 
 interface DashboardChartsProps {
     taskStatusData: { name: string; value: number }[]
-    timeLogData: { date: string; hours: number }[]
+    timeLogData: { date: string; hours: number; fullDate?: string }[]
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export function DashboardCharts({ taskStatusData, timeLogData }: DashboardChartsProps) {
+    const router = useRouter()
+
     // Filter out zero values for cleaner pie chart
     const activeTaskData = taskStatusData.filter(d => d.value > 0)
+
+    const handleBarClick = (data: any) => {
+        if (data && data.fullDate) {
+            router.push(`/time?date=${data.fullDate}&view=day`)
+        }
+    }
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
             <Card className="col-span-4">
-                <CardHeader>
-                    <CardTitle>Time Logged</CardTitle>
-                    <CardDescription>
-                        Daily breakdown of hours tracked in selected range.
-                    </CardDescription>
-                </CardHeader>
+                {/* ... */}
                 <CardContent className="pl-2">
                     <div className="h-[300px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={timeLogData}>
+                                {/* ... axes ... */}
                                 <XAxis
                                     dataKey="date"
                                     stroke="#888888"
@@ -42,10 +47,16 @@ export function DashboardCharts({ taskStatusData, timeLogData }: DashboardCharts
                                     tickFormatter={(value) => `${value}h`}
                                 />
                                 <Tooltip
-                                    cursor={{ fill: 'transparent' }}
+                                    cursor={{ fill: 'transparent' }} // use simplified cursor
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                                 />
-                                <Bar dataKey="hours" fill="#0f172a" radius={[4, 4, 0, 0]} className="fill-primary" />
+                                <Bar
+                                    dataKey="hours"
+                                    fill="#0f172a"
+                                    radius={[4, 4, 0, 0]}
+                                    className="fill-primary cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={handleBarClick}
+                                />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
