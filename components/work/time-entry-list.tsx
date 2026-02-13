@@ -55,7 +55,18 @@ export function TimeEntryList({ entries, onEdit, onStart }: TimeEntryListProps) 
 
                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                             {/* Start button for quick duplicate/restart */}
-
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (onStart) onStart(entry)
+                                }}
+                                className="h-8 px-2 sm:px-3 gap-1 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+                            >
+                                <Play className="h-3.5 w-3.5" />
+                                <span className="hidden sm:inline">Start</span>
+                            </Button>
 
                             <Button variant="outline" size="sm" onClick={() => onEdit(entry)} className="h-8 px-2 sm:px-3">
                                 <Edit className="h-3.5 w-3.5 sm:mr-1" />

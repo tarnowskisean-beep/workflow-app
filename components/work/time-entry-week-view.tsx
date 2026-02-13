@@ -83,7 +83,18 @@ export function TimeEntryWeekView({ entries, onEdit, onStart, date }: TimeEntryW
                                                 {Math.floor(entry.durationSeconds / 3600)}:{Math.floor((entry.durationSeconds % 3600) / 60).toString().padStart(2, '0')}
                                             </div>
                                             {/* Start button for week view */}
-
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (onStart) onStart(entry)
+                                                }}
+                                                className="h-8 w-8 p-0 sm:w-auto sm:px-3 sm:gap-1 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+                                            >
+                                                <Play className="h-3.5 w-3.5" />
+                                                <span className="hidden sm:inline">Start</span>
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}

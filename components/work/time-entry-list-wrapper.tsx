@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { parseLocalDate, formatLocalDate } from "@/lib/date-utils"
 import { TimeEntryWithFullRelations, ProjectOption, TaskOption } from "@/types"
 
-import { TimeEntryWeekView } from "./time-entry-week-view"
+import { useTimer } from "@/components/providers/timer-provider"
 
 interface TimeEntryListWrapperProps {
     entries: TimeEntryWithFullRelations[]
@@ -21,8 +21,26 @@ export function TimeEntryListWrapper({ entries, tasks, projects, view = "day", d
     const [editingEntry, setEditingEntry] = useState<TimeEntryWithFullRelations | null>(null)
     const [startingEntry, setStartingEntry] = useState<TimeEntryWithFullRelations | null>(null)
     const router = useRouter()
+    const { startTimer, activeTimer } = useTimer()
 
     const parsedDate = date ? parseLocalDate(date) : new Date()
+
+    const handleStart = async (entry: any) => {
+        if (activeTimer) {
+            alert("A timer is already running. Please stop it first.")
+            return
+        }
+
+        // Start timer immediately with entry details
+        // Note: entry.taskType is preferred, fallback to task logic if needed
+        await startTimer(
+            entry.projectId,
+            entry.taskType || undefined,
+            entry.workItemId || undefined,
+            "" // Start with empty notes or maybe copy? Let's keep empty for fresh start
+        )
+        router.refresh()
+    }
 
     return (
         <>
@@ -30,14 +48,14 @@ export function TimeEntryListWrapper({ entries, tasks, projects, view = "day", d
                 <TimeEntryWeekView
                     entries={entries}
                     onEdit={setEditingEntry}
-                    onStart={setStartingEntry}
+                    onStart={handleStart}
                     date={parsedDate}
                 />
             ) : (
                 <TimeEntryList
                     entries={entries}
                     onEdit={(entry) => setEditingEntry(entry)}
-                    onStart={(entry) => setStartingEntry(entry)}
+                    onStart={handleStart}
                 />
             )}
 
