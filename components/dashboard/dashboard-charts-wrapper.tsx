@@ -53,39 +53,50 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
         timeWhere.userId = session.user.id
     }
 
-    const [openTasks, inProgressTasks, doneTasks, timeEntries] = await Promise.all([
-        prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.OPEN } }),
-        prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.IN_PROGRESS } }),
-        prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.DONE } }),
-        prisma.timeEntry.findMany({
-            where: timeWhere,
-            orderBy: { createdAt: 'asc' },
-            select: { createdAt: true, durationSeconds: true }
-        }),
-    ])
+    try {
+        const [openTasks, inProgressTasks, doneTasks, timeEntries] = await Promise.all([
+            prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.OPEN } }),
+            prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.IN_PROGRESS } }),
+            prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.DONE } }),
+            prisma.timeEntry.findMany({
+                where: timeWhere,
+                orderBy: { createdAt: 'asc' },
+                select: { createdAt: true, durationSeconds: true }
+            }),
+        ])
 
-    // 1. Task Distribution
-    const taskStatusData = [
-        { name: 'Open', value: openTasks + inProgressTasks },
-        { name: 'Done', value: doneTasks },
-    ]
+        // 1. Task Distribution
+        const taskStatusData = [
+            { name: 'Open', value: openTasks + inProgressTasks },
+            { name: 'Done', value: doneTasks },
+        ]
 
-    // 2. Time Trend (Group by Interval Day)
-    const daysInterval = eachDayOfInterval({ start: startDate, end: endDate })
+        // 2. Time Trend (Group by Interval Day)
+        const daysInterval = eachDayOfInterval({ start: startDate, end: endDate })
 
-    const timeLogData = daysInterval.map(day => {
-        const dateStr = format(day, DATE_FORMATS.SHORT_DISPLAY)
-        // Sum duration for this day
-        const dailySeconds = timeEntries
-            .filter(e => format(e.createdAt, DATE_FORMATS.SHORT_DISPLAY) === dateStr)
-            .reduce((acc, e) => acc + e.durationSeconds, 0)
+        const timeLogData = daysInterval.map(day => {
+            const dateStr = format(day, DATE_FORMATS.SHORT_DISPLAY)
+            // Sum duration for this day
+            const dailySeconds = timeEntries
+                .filter(e => format(e.createdAt, DATE_FORMATS.SHORT_DISPLAY) === dateStr)
+                .reduce((acc, e) => acc + e.durationSeconds, 0)
 
-        return {
-            date: dateStr,
-            fullDate: format(day, DATE_FORMATS.ISO),
-            hours: parseFloat((dailySeconds / 3600).toFixed(1))
-        }
-    })
+            return {
+                date: dateStr,
+                fullDate: format(day, DATE_FORMATS.ISO),
+                hours: parseFloat((dailySeconds / 3600).toFixed(1))
+            }
+        })
 
-    return <DashboardCharts taskStatusData={taskStatusData} timeLogData={timeLogData} />
+        return <DashboardCharts taskStatusData={taskStatusData} timeLogData={timeLogData} />
+    } catch (error: any) {
+        console.error("DashboardChartsWrapper Error:", error)
+        return (
+            <div className="p-4 border border-red-200 rounded bg-red-50 text-red-800 text-sm">
+                <p className="font-bold">Error loading charts:</p>
+                <pre>{error.message}</pre>
+                <pre>{JSON.stringify(error, Object.getOwnPropertyNames(error))}</pre>
+            </div>
+        )
+    }
 }
