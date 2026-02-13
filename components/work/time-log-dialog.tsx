@@ -149,7 +149,14 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         }
     }
 
-    // ... (handleDelete) ...
+    async function handleDelete() {
+        if (!entryToEdit) return
+        if (!confirm("Are you sure you want to delete this time entry?")) return
+        setLoading(true)
+        await deleteTimeEntry(entryToEdit.id)
+        setLoading(false)
+        onComplete()
+    }
 
     const isEditMode = !!entryToEdit
 
