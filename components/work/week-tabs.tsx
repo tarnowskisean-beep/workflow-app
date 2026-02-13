@@ -6,14 +6,19 @@ import { format, isSameDay, startOfWeek, addDays } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
+import { parseLocalDate } from "@/lib/date-utils"
+
 interface WeekTabsProps {
-    currentDate: Date
+    currentDateStr: string
     weeklyEntries: any[]
 }
 
-export function WeekTabs({ currentDate, weeklyEntries }: WeekTabsProps) {
+export function WeekTabs({ currentDateStr, weeklyEntries }: WeekTabsProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
+
+    // Parse locally to ensure we stay in client's timezone (avoiding UTC shift from server)
+    const currentDate = parseLocalDate(currentDateStr)
 
     // Calculate week start (Monday)
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })

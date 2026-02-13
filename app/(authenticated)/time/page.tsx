@@ -74,7 +74,7 @@ export default async function TimePage({ searchParams }: { searchParams: Promise
 
                 {/* Day Tabs - Only show in Day view */}
                 {view === 'day' && (
-                    <WeekTabs currentDate={date} weeklyEntries={weeklyEntries} />
+                    <WeekTabs currentDateStr={dateStr} weeklyEntries={weeklyEntries} />
                 )}
             </div>
 
