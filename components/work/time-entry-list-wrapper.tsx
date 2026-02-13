@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { parseLocalDate, formatLocalDate } from "@/lib/date-utils"
 import { TimeEntryWithFullRelations, ProjectOption, TaskOption } from "@/types"
 
+import { TimeEntryWeekView } from "./time-entry-week-view"
 import { useTimer } from "@/components/providers/timer-provider"
 
 interface TimeEntryListWrapperProps {
