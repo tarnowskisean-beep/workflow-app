@@ -36,6 +36,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
     async function handleStartTimer() {
         if (!selectedProjectId) {
+            // Validate project selection
             alert("Please select a project first")
             return
         }
