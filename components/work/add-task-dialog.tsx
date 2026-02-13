@@ -32,9 +32,20 @@ export function AddTaskDialog({ projects = [], users = [], defaultProjectId }: {
 
     const getTaskTypesForProject = (pid: string) => {
         const proj = projects.find(p => p.id === pid)
+        // Debug
+        console.log("AddTaskDialog - getTaskTypesForProject pid:", pid)
+        console.log("AddTaskDialog - Found Project:", proj)
+        console.log("AddTaskDialog - Allowed Types Raw:", proj?.allowedTaskTypes)
+
         if (!proj || !proj.allowedTaskTypes) return []
-        return proj.allowedTaskTypes.split(",").map(t => t.trim()).filter(Boolean)
+        const types = proj.allowedTaskTypes.split(",").map(t => t.trim()).filter(Boolean)
+        console.log("AddTaskDialog - Parsed Types:", types)
+        return types
     }
+
+    // Debug Initial Props
+    console.log("AddTaskDialog - Props Projects:", projects)
+    console.log("AddTaskDialog - Default Project ID:", defaultProjectId)
 
     async function handleSubmit(formData: FormData) {
         setPending(true)
