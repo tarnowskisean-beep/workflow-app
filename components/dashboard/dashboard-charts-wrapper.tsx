@@ -4,6 +4,7 @@ import { DashboardCharts } from "@/components/dashboard/dashboard-charts"
 import { startOfDay, startOfWeek, endOfWeek, parseISO, eachDayOfInterval, format } from "date-fns"
 import { auth } from "@/auth"
 import { TASK_STATUS } from "@/lib/constants"
+import { DATE_FORMATS } from "@/lib/format"
 
 interface DashboardChartsWrapperProps {
     projectId?: string
@@ -74,15 +75,15 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
     const daysInterval = eachDayOfInterval({ start: startDate, end: endDate })
 
     const timeLogData = daysInterval.map(day => {
-        const dateStr = format(day, 'MMM dd')
+        const dateStr = format(day, DATE_FORMATS.SHORT_DISPLAY)
         // Sum duration for this day
         const dailySeconds = timeEntries
-            .filter(e => format(e.createdAt, 'MMM dd') === dateStr)
+            .filter(e => format(e.createdAt, DATE_FORMATS.SHORT_DISPLAY) === dateStr)
             .reduce((acc, e) => acc + e.durationSeconds, 0)
 
         return {
             date: dateStr,
-            fullDate: format(day, 'yyyy-MM-dd'),
+            fullDate: format(day, DATE_FORMATS.ISO),
             hours: parseFloat((dailySeconds / 3600).toFixed(1))
         }
     })

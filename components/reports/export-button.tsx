@@ -5,6 +5,7 @@ import { Download, Loader2 } from "lucide-react"
 import { getComprehensiveReport, TimeReportEntry } from "@/actions/report-actions"
 import { format } from "date-fns"
 import { useState } from "react"
+import { DATE_FORMATS } from "@/lib/format"
 
 interface ExportButtonProps {
     from: Date
@@ -34,7 +35,7 @@ export function ExportButton({ from, to, projectId, userId, taskId, filename = "
 
             // CSV Rows
             const rows = data.map((entry: TimeReportEntry) => [
-                format(new Date(entry.date), "yyyy-MM-dd"),
+                format(new Date(entry.date), DATE_FORMATS.ISO),
                 `"${(entry.userName || "").replace(/"/g, '""')}"`,
                 `"${(entry.projectName || "").replace(/"/g, '""')}"`,
                 `"${(entry.taskTitle || "").replace(/"/g, '""')}"`,
@@ -53,7 +54,7 @@ export function ExportButton({ from, to, projectId, userId, taskId, filename = "
             const url = URL.createObjectURL(blob)
             const link = document.createElement("a")
             link.setAttribute("href", url)
-            link.setAttribute("download", `${filename}-${format(new Date(), "yyyy-MM-dd")}.csv`)
+            link.setAttribute("download", `${filename}-${format(new Date(), DATE_FORMATS.ISO)}.csv`)
             link.style.visibility = "hidden"
             document.body.appendChild(link)
             link.click()

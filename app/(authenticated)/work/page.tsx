@@ -11,7 +11,7 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth 
 export default async function WorkPage({ searchParams }: { searchParams: Promise<{ view?: string, projectId?: string, assigneeId?: string, period?: string, display?: string, status?: string, taskId?: string, priority?: string }> }) {
     const session = await auth()
     if (!session?.user?.id) return null
-    console.log("WorkPage Session User:", session.user)
+
 
     const { view, projectId, assigneeId, period, display, status, taskId, priority } = await searchParams
     const showMineOnly = view === "mine"
