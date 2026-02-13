@@ -53,72 +53,82 @@ export async function DashboardStats({ projectId, userId, from, to }: DashboardS
         timeWhere.userId = session.user.id
     }
 
-    const [openTasks, doneTasks, timeEntries, overdueCount] = await Promise.all([
-        prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.OPEN } }),
-        prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.DONE } }),
-        prisma.timeEntry.findMany({
-            where: timeWhere,
-            select: { durationSeconds: true }
-        }),
-        prisma.workItem.count({
-            where: {
-                ...taskWhere,
-                status: { not: TASK_STATUS.DONE },
-                dueDate: { lt: new Date() }
-            }
-        })
-    ])
+    try {
+        const [openTasks, doneTasks, timeEntries, overdueCount] = await Promise.all([
+            prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.OPEN } }),
+            prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.DONE } }),
+            prisma.timeEntry.findMany({
+                where: timeWhere,
+                select: { durationSeconds: true }
+            }),
+            prisma.workItem.count({
+                where: {
+                    ...taskWhere,
+                    status: { not: TASK_STATUS.DONE },
+                    dueDate: { lt: new Date() }
+                }
+            })
+        ])
 
-    const totalSeconds = timeEntries.reduce((acc, curr) => acc + curr.durationSeconds, 0)
-    const totalHours = (totalSeconds / 3600).toFixed(1)
+        const totalSeconds = timeEntries.reduce((acc, curr) => acc + curr.durationSeconds, 0)
+        const totalHours = (totalSeconds / 3600).toFixed(1)
 
-    // Links
-    const baseParams = new URLSearchParams()
-    if (projectId && projectId !== 'all') baseParams.set('projectId', projectId)
-    if (userId && userId !== 'all') baseParams.set('assigneeId', userId)
+        // Links
+        const baseParams = new URLSearchParams()
+        if (projectId && projectId !== 'all') baseParams.set('projectId', projectId)
+        if (userId && userId !== 'all') baseParams.set('assigneeId', userId)
 
-    const overdueHref = `/work?period=overdue&${baseParams.toString()}`
-    const openHref = `/work?status=${TASK_STATUS.OPEN}&${baseParams.toString()}`
-    const closedHref = `/work?status=${TASK_STATUS.DONE}&${baseParams.toString()}`
+        const overdueHref = `/work?period=overdue&${baseParams.toString()}`
+        const openHref = `/work?status=${TASK_STATUS.OPEN}&${baseParams.toString()}`
+        const closedHref = `/work?status=${TASK_STATUS.DONE}&${baseParams.toString()}`
 
-    const timeParams = new URLSearchParams()
-    if (projectId && projectId !== 'all') timeParams.set('projectId', projectId)
-    if (userId && userId !== 'all') timeParams.set('userId', userId)
-    const timeHref = `/time?${timeParams.toString()}`
+        const timeParams = new URLSearchParams()
+        if (projectId && projectId !== 'all') timeParams.set('projectId', projectId)
+        if (userId && userId !== 'all') timeParams.set('userId', userId)
+        const timeHref = `/time?${timeParams.toString()}`
 
-    return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {overdueCount > 0 && (
+        return (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {overdueCount > 0 && (
+                    <StatsCard
+                        title="Overdue Tasks"
+                        value={overdueCount}
+                        icon={AlertCircle}
+                        description="Items past due"
+                        href={overdueHref}
+                        variant="destructive"
+                    />
+                )}
                 <StatsCard
-                    title="Overdue Tasks"
-                    value={overdueCount}
-                    icon={AlertCircle}
-                    description="Items past due"
-                    href={overdueHref}
-                    variant="destructive"
+                    title="Open Tasks"
+                    value={openTasks}
+                    icon={CheckSquare}
+                    description="Tasks requiring attention"
+                    href={openHref}
                 />
-            )}
-            <StatsCard
-                title="Open Tasks"
-                value={openTasks}
-                icon={CheckSquare}
-                description="Tasks requiring attention"
-                href={openHref}
-            />
-            <StatsCard
-                title="Closed Tasks"
-                value={doneTasks}
-                icon={CheckSquare}
-                description="Completed tasks"
-                href={closedHref}
-            />
-            <StatsCard
-                title="Time Logged"
-                value={`${totalHours}h`}
-                icon={Clock}
-                description="In selected range"
-                href={timeHref}
-            />
-        </div>
-    )
+                <StatsCard
+                    title="Closed Tasks"
+                    value={doneTasks}
+                    icon={CheckSquare}
+                    description="Completed tasks"
+                    href={closedHref}
+                />
+                <StatsCard
+                    title="Time Logged"
+                    value={`${totalHours}h`}
+                    icon={Clock}
+                    description="In selected range"
+                    href={timeHref}
+                />
+            </div>
+        )
+    } catch (error: any) {
+        console.error("DashboardStats Error:", error)
+        return (
+            <div className="p-4 border border-red-200 rounded bg-red-50 text-red-800 text-sm">
+                <p className="font-bold">Error loading stats:</p>
+                <pre>{error.message}</pre>
+            </div>
+        )
+    }
 }
