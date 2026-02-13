@@ -143,6 +143,7 @@ model TimeEntry {
   userId          String
   workItemId      String?
   projectId       String?
+  taskType        String?  // e.g. "Bookkeeping", "Audit"
   driveLink       String?
   durationSeconds Int       @default(0)
   startedAt       DateTime

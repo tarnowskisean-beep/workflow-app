@@ -42,14 +42,19 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         if (entryToEdit) {
             setDate(new Date(entryToEdit.startedAt).toISOString().split('T')[0])
             setSelectedProjectId(entryToEdit.projectId || "")
-            setSelectedTaskId(entryToEdit.workItemId || "")
+            // Use taskType if available, fallback to workItemId or empty
+            setSelectedTaskId(entryToEdit.taskType || entryToEdit.workItemId || "")
         } else if (initialValues) {
             setDate(new Date().toISOString().split('T')[0]) // Default to today for new entry
             setSelectedProjectId(initialValues.projectId || "")
-            setSelectedTaskId(initialValues.taskId || "")
+            setSelectedTaskId(initialValues.taskId || "") // Note: this might need adjustment if initialValues.taskId refers to workItem
         } else if (task) {
             setSelectedProjectId(task.projectId || "")
-            setSelectedTaskId(task.id)
+            // Logic for pre-filling from a WorkItem might need to match a type or remain valid?
+            // For now, if opened from a Task, we might keep it or map it?
+            // The user wants TYPES. If 'task' prop is passed, it implies context of a specific ticket.
+            // We might need to handle this.
+            setSelectedTaskId("")
         } else {
             // Reset if creating new
             // But don't reset date if passed as defaultDate
@@ -76,10 +81,10 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
         const notes = (document.getElementById('notes') as HTMLTextAreaElement)?.value
 
-        // Handle "no-task" sentinel
-        const taskId = (!selectedTaskId || selectedTaskId === "none" || selectedTaskId === "no-task") ? undefined : selectedTaskId
+        // selectedTaskId now holds the taskType string
+        const taskType = selectedTaskId
 
-        await startTimer(selectedProjectId, taskId, notes)
+        await startTimer(selectedProjectId, taskType || undefined, undefined, notes)
         onOpenChange(false)
     }
 
@@ -92,22 +97,27 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 alert("Please select a project")
                 return
             }
-            // Task is now optional
+            if (!selectedTaskId) {
+                alert("Please select a task type")
+                return
+            }
 
             let result
 
-            // Handle "no-task" sentinel
-            const taskId = (!selectedTaskId || selectedTaskId === "none" || selectedTaskId === "no-task") ? "" : selectedTaskId
+            // selectedTaskId now holds the taskType string
+            const taskType = selectedTaskId
 
             // If editing
             if (entryToEdit) {
                 formData.set("date", new Date(date).toISOString())
                 formData.set("projectId", selectedProjectId)
-                formData.set("workItemId", taskId)
+                formData.set("taskType", taskType)
+                // Clear workItemId if we are switching to task types primarily
+                formData.delete("workItemId")
                 result = await updateTimeEntry(entryToEdit.id, formData)
             } else {
                 // Creating new
-                if (taskId) formData.append("workItemId", taskId)
+                if (taskType) formData.append("taskType", taskType)
                 formData.append("projectId", selectedProjectId)
 
                 // Ensure date is valid before appending
@@ -185,16 +195,20 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task"} />
-                                    </SelectTrigger>
+                                    </SelectContent>
                                     <SelectContent>
-                                        <SelectItem value="no-task">General (No Task)</SelectItem>
-                                        {tasks
-                                            .filter(t => t.projectId === selectedProjectId)
-                                            .map(t => (
-                                                <SelectItem key={t.id} value={t.id}>
-                                                    {t.title}
+                                        {(() => {
+                                            const project = projects.find(p => p.id === selectedProjectId)
+                                            if (!project || !project.allowedTaskTypes) return null
+
+                                            const types = project.allowedTaskTypes.split(',').map((t: string) => t.trim())
+
+                                            return types.map((type: string) => (
+                                                <SelectItem key={type} value={type}>
+                                                    {type}
                                                 </SelectItem>
-                                            ))}
+                                            ))
+                                        })()}
                                     </SelectContent>
                                 </Select>
                             </div>

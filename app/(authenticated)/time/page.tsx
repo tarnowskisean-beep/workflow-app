@@ -34,7 +34,7 @@ export default async function TimePage({ searchParams }: { searchParams: Promise
             orderBy: { title: 'asc' }
         }),
         prisma.project.findMany({
-            select: { id: true, name: true },
+            select: { id: true, name: true, allowedTaskTypes: true },
             orderBy: { name: 'asc' }
         }),
         prisma.timeEntry.findMany({

@@ -45,7 +45,7 @@ export function GlobalTimer() {
                     {activeTimer.project?.name || "No Project"}
                 </span>
                 <span className="text-sm font-semibold truncate max-w-[150px]">
-                    {activeTimer.workItem?.title || "No Task"}
+                    {activeTimer.taskType || activeTimer.workItem?.title || "No Task"}
                 </span>
             </div>
 

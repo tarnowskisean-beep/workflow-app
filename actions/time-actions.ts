@@ -8,6 +8,7 @@ import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 
 const timeEntrySchema = z.object({
     workItemId: z.string().optional(),
+    taskType: z.string().optional(),
     durationMinutes: z.coerce.number().min(1, "Duration must be at least 1 minute"),
     notes: z.string().optional(),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), {
@@ -24,6 +25,7 @@ export async function logTime(formData: FormData) {
 
     const rawData = {
         workItemId: formData.get("workItemId") || undefined,
+        taskType: formData.get("taskType") || undefined,
         durationMinutes: formData.get("durationMinutes"),
         notes: formData.get("notes"),
         date: formData.get("date"),
@@ -36,7 +38,7 @@ export async function logTime(formData: FormData) {
         return { error: validated.error.flatten().fieldErrors }
     }
 
-    const { workItemId, durationMinutes, notes, date } = validated.data
+    const { workItemId, taskType, durationMinutes, notes, date } = validated.data
     const startedAt = new Date(date)
 
     // Duration in DB is seconds
@@ -59,6 +61,7 @@ export async function logTime(formData: FormData) {
             data: {
                 userId: session.user.id,
                 workItemId: workItemId || null,
+                taskType: taskType || null,
                 projectId: projectId,
                 durationSeconds,
                 startedAt,
@@ -90,6 +93,7 @@ export async function updateTimeEntry(id: string, formData: FormData) {
     const date = formData.get("date") as string
     const projectId = formData.get("projectId") as string
     const workItemId = formData.get("workItemId") as string
+    const taskType = formData.get("taskType") as string
 
     try {
         await prisma.timeEntry.update({
@@ -99,7 +103,8 @@ export async function updateTimeEntry(id: string, formData: FormData) {
                 notes,
                 startedAt: new Date(date),
                 projectId: projectId || undefined,
-                workItemId: workItemId || undefined
+                workItemId: workItemId || undefined,
+                taskType: taskType || undefined
             }
         })
         revalidatePath("/time")
@@ -121,8 +126,6 @@ export async function deleteTimeEntry(id: string) {
         return { error: "Failed to delete" }
     }
 }
-
-
 
 
 export async function getWeeklyEntries(date: Date) {
@@ -181,7 +184,7 @@ export async function getWeeklySummary() {
 
 // --- Live Timer Actions ---
 
-export async function startTimer(projectId: string, workItemId?: string, notes?: string) {
+export async function startTimer(projectId: string, taskType?: string, workItemId?: string, notes?: string) {
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
 
@@ -207,6 +210,7 @@ export async function startTimer(projectId: string, workItemId?: string, notes?:
                 userId: session.user.id,
                 projectId,
                 workItemId,
+                taskType,
                 notes,
                 startedAt: new Date(),
                 endedAt: null,

@@ -11,12 +11,13 @@ interface TimerType {
     startedAt: Date
     project?: { name: string }
     workItem?: { title: string }
+    taskType?: string
 }
 
 interface TimerContextType {
     activeTimer: TimerType | null
     isLoading: boolean
-    startTimer: (projectId: string, workItemId?: string, notes?: string) => Promise<any>
+    startTimer: (projectId: string, taskType?: string, workItemId?: string, notes?: string) => Promise<any>
     stopTimer: (notes?: string) => Promise<any>
     discardTimer: () => Promise<any>
 }
@@ -40,13 +41,20 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         fetchTimer()
     }, [])
 
-    const startTimer = async (projectId: string, workItemId?: string, notes?: string) => {
+    const startTimer = async (projectId: string, taskType?: string, workItemId?: string, notes?: string) => {
         setIsLoading(true)
-        const result = await startTimerAction(projectId, workItemId, notes)
-        if (result.success && result.entry) {
-            setActiveTimer(result.entry as any)
+        let result: any // Declare result outside try block to be accessible for return
+        try {
+            result = await startTimerAction(projectId, taskType, workItemId, notes)
+            if (result.error) {
+                // handle error
+                console.error(result.error)
+            } else if (result.entry) {
+                setActiveTimer(result.entry as any)
+            }
+        } finally {
+            setIsLoading(false)
         }
-        setIsLoading(false)
         return result
     }
 
