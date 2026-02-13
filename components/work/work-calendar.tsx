@@ -72,7 +72,11 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
     const getTasksForDay = (date: Date) => {
         return items.filter(item => {
             if (!item.dueDate) return false
-            return isSameDay(new Date(item.dueDate), date)
+            // Fix: Compare using UTC date string from the item (source of truth) vs Local date string of the cell
+            // This prevents "2026-02-13T00:00:00Z" (Feb 13) from being shown as Feb 12 in PST
+            const itemDateStr = new Date(item.dueDate).toISOString().split('T')[0]
+            const calendarDateStr = format(date, 'yyyy-MM-dd')
+            return itemDateStr === calendarDateStr
         })
     }
 
