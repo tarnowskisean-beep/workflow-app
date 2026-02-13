@@ -34,7 +34,7 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
 
     const taskWhere: any = { status: { not: TASK_STATUS.ARCHIVED } }
     const timeWhere: any = {
-        createdAt: {
+        startedAt: {
             gte: startDate,
             lte: endDate
         }
@@ -60,8 +60,8 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
             prisma.workItem.count({ where: { ...taskWhere, status: TASK_STATUS.DONE } }),
             prisma.timeEntry.findMany({
                 where: timeWhere,
-                orderBy: { createdAt: 'asc' },
-                select: { createdAt: true, durationSeconds: true }
+                orderBy: { startedAt: 'asc' },
+                select: { startedAt: true, durationSeconds: true }
             }),
         ])
 
@@ -78,7 +78,7 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
             const dateStr = format(day, DATE_FORMATS.SHORT_DISPLAY)
             // Sum duration for this day
             const dailySeconds = timeEntries
-                .filter(e => format(e.createdAt, DATE_FORMATS.SHORT_DISPLAY) === dateStr)
+                .filter(e => format(e.startedAt, DATE_FORMATS.SHORT_DISPLAY) === dateStr)
                 .reduce((acc, e) => acc + e.durationSeconds, 0)
 
             return {
