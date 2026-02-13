@@ -135,7 +135,18 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 formData.append("projectId", selectedProjectId)
 
                 // Ensure date is valid before appending
-                const submitDate = date ? new Date(date) : new Date()
+                // Construct a local date object from "YYYY-MM-DD" string to avoid UTC midnight shift
+                // We set it to local noon to be safe from DST shifts, or use current time if it is today
+                let submitDate: Date
+
+                if (date) {
+                    const [y, m, d] = date.split('-').map(Number)
+                    // Create date in local time (noon to be safe)
+                    submitDate = new Date(y, m - 1, d, 12, 0, 0)
+                } else {
+                    submitDate = new Date()
+                }
+
                 formData.set("date", submitDate.toISOString())
 
                 result = await logTime(formData)
