@@ -37,13 +37,18 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
     const [selectedProjectId, setSelectedProjectId] = useState<string>("")
     const [selectedTaskId, setSelectedTaskId] = useState<string>("")
 
+    // Debug logging effect
+    useEffect(() => {
+        if (open) {
+            console.log("TimeLogDialog - Projects:", projects)
+            const currentProject = projects.find(p => p.id === selectedProjectId)
+            console.log("TimeLogDialog - Selected Project Data:", currentProject)
+            console.log("TimeLogDialog - Allowed Task Types:", currentProject?.allowedTaskTypes)
+        }
+    }, [open, projects, selectedProjectId])
+
     // Initialize state when entryToEdit changes or dialog opens
     useEffect(() => {
-        console.log("TimeLogDialog - Projects:", projects)
-        const currentProject = projects.find(p => p.id === selectedProjectId)
-        console.log("TimeLogDialog - Selected Project Data:", currentProject)
-        console.log("TimeLogDialog - Allowed Task Types:", currentProject?.allowedTaskTypes)
-
         if (entryToEdit) {
             setDate(new Date(entryToEdit.startedAt).toISOString().split('T')[0])
             setSelectedProjectId(entryToEdit.projectId || "")
@@ -52,23 +57,21 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         } else if (initialValues) {
             setDate(new Date().toISOString().split('T')[0]) // Default to today for new entry
             setSelectedProjectId(initialValues.projectId || "")
-            setSelectedTaskId(initialValues.taskId || "") // Note: this might need adjustment if initialValues.taskId refers to workItem
+            setSelectedTaskId(initialValues.taskId || "")
         } else if (task) {
             setSelectedProjectId(task.projectId || "")
-            // Logic for pre-filling from a WorkItem might need to match a type or remain valid?
-            // For now, if opened from a Task, we might keep it or map it?
-            // The user wants TYPES. If 'task' prop is passed, it implies context of a specific ticket.
-            // We might need to handle this.
             setSelectedTaskId("")
         } else {
             // Reset if creating new
-            // But don't reset date if passed as defaultDate
             if (open && !entryToEdit) {
+                // Only reset if we are opening a fresh dialog
+                // This logic is tricky if 'open' stays true. 
+                // Ideally we reset only on the transition open=true.
                 setSelectedProjectId("")
                 setSelectedTaskId("")
             }
         }
-    }, [entryToEdit, task, initialValues, open, projects, selectedProjectId])
+    }, [entryToEdit, task, initialValues, open])
 
     async function handleStartTimer() {
         if (!selectedProjectId) {
