@@ -239,7 +239,13 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
 
     if (pid && pid !== "all") where.projectId = pid
     if (uid && uid !== "all") where.userId = uid
-    if (tid && tid !== "all") where.workItemId = tid
+    // Update filter logic to support Title grouping
+    if (tid && tid !== "all") {
+        where.OR = [
+            { workItemId: tid },
+            { workItem: { title: { startsWith: tid } } }
+        ]
+    }
 
     const rawEntries: TimeEntryWithRelations[] = await prisma.timeEntry.findMany({
         where,
@@ -332,11 +338,16 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
             uItem.billableAmount += amount
         }
 
-        // Aggregate Task
+        // Aggregate Task (Normalized)
         // @ts-ignore
-        const tId = entry.workItemId || entry.taskType || "no-task"
-        // @ts-ignore
-        const tName = entry.workItem?.title || entry.taskType || "No Task"
+        const rawTitle = entry.workItem?.title || entry.taskType || "No Task"
+        // Strip ending " - CODE" if present
+        const normalizedTitle = rawTitle.replace(/\s-\s[A-Za-z0-9]+$/, "")
+
+        // Use normalized title as ID and Name to group them
+        const tId = normalizedTitle
+        const tName = normalizedTitle
+
         if (!taskMap.has(tId)) taskMap.set(tId, { id: tId, name: tName, totalHours: 0, billableHours: 0, billableAmount: 0, percent: 0 })
         const tItem = taskMap.get(tId)!
         tItem.totalHours += duration
