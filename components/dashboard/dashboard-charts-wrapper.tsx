@@ -66,8 +66,7 @@ export async function DashboardChartsWrapper({ projectId, userId, from, to }: Da
 
     // 1. Task Distribution
     const taskStatusData = [
-        { name: 'Open', value: openTasks },
-        { name: 'In Progress', value: inProgressTasks },
+        { name: 'Open', value: openTasks + inProgressTasks },
         { name: 'Done', value: doneTasks },
     ]
 
