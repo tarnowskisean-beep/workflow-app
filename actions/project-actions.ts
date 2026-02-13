@@ -48,10 +48,6 @@ export async function getProjects(query?: string, projectId?: string) {
                 },
                 users: {
                     select: { id: true, name: true, avatarUrl: true }
-                },
-                workItems: {
-                    orderBy: { updatedAt: 'desc' },
-                    take: 20 // Limit for now, or paginate later
                 }
             }
         })

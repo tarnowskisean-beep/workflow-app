@@ -57,6 +57,10 @@ model Project {
   workItems         WorkItem[]
   assignedTemplates TaskTemplateGroup[] @relation("ProjectToTaskTemplateGroup")
   users             User[]              @relation("ProjectUsers")
+
+  @@index([managerId])
+  @@index([seniorId])
+  @@index([associateId])
 }
 
 model WorkItem {
@@ -86,6 +90,10 @@ model WorkItem {
   timeEntries        TimeEntry[]
   assignee           User?             @relation("AssignedTo", fields: [assigneeId], references: [id])
   project            Project?          @relation(fields: [projectId], references: [id])
+
+  @@index([assigneeId])
+  @@index([projectId])
+  @@index([status, dueDate])
 }
 
 model TaskTemplateGroup {
@@ -155,6 +163,11 @@ model TimeEntry {
   project         Project?  @relation(fields: [projectId], references: [id])
   workItem        WorkItem? @relation(fields: [workItemId], references: [id])
   user            User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([projectId])
+  @@index([workItemId])
+  @@index([startedAt])
 }
 
 

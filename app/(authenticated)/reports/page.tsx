@@ -41,7 +41,7 @@ export default async function ReportsPage({
                     <p className="text-muted-foreground">Performance, time tracking, and team insights.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <ExportButton data={report.entries} />
+                    <ExportButton from={from} to={to} projectId={projectId} userId={userId} taskId={taskId} />
                 </div>
             </div>
 

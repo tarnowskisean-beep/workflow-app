@@ -219,7 +219,7 @@ export type ComprehensiveReport = {
     entries: TimeReportEntry[]
 }
 
-export async function getComprehensiveReport(from: Date, to: Date, projectId?: string, userId?: string, taskId?: string): Promise<ComprehensiveReport> {
+export async function getComprehensiveReport(from: Date, to: Date, projectId?: string, userId?: string, taskId?: string, includeEntries: boolean = false): Promise<ComprehensiveReport> {
     const session = await auth()
     if (!session?.user?.id) throw new Error("Unauthorized")
 
@@ -361,7 +361,7 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
         byProject: finalizeArray(projectMap),
         byUser: finalizeArray(userMap),
         byTask: finalizeArray(taskMap),
-        entries: reportEntries
+        entries: includeEntries ? reportEntries : []
     }
 }
 
