@@ -1,7 +1,7 @@
 import { ROLES, Role } from "@/lib/constants"
 import { User } from "@prisma/client"
 
-type Action = "create:project" | "update:project" | "delete:project" | "manage:team"
+type Action = "create:project" | "update:project" | "delete:project" | "manage:team" | "view:financials"
 
 export function can(user: { role: string | null }, action: Action): boolean {
     const role = (user.role || ROLES.ASSOCIATE) as Role
@@ -14,6 +14,8 @@ export function can(user: { role: string | null }, action: Action): boolean {
         case "delete:project":
             return role === ROLES.ADMIN
         case "manage:team":
+            return role === ROLES.ADMIN || role === ROLES.MANAGER
+        case "view:financials":
             return role === ROLES.ADMIN || role === ROLES.MANAGER
         default:
             return false

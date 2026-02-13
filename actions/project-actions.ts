@@ -30,7 +30,7 @@ export async function getProjects(query?: string, projectId?: string) {
     const isAdminOrManager = userRole === ROLES.ADMIN || userRole === ROLES.MANAGER
 
     try {
-        return await prisma.project.findMany({
+        const projects = await prisma.project.findMany({
             where: {
                 ...(isAdminOrManager ? {} : { users: { some: { id: session.user.id } } }),
                 ...(projectId && projectId !== "all" ? { id: projectId } : {}), // Filter by specific project ID
@@ -55,6 +55,18 @@ export async function getProjects(query?: string, projectId?: string) {
                 }
             }
         })
+
+        if (!can(session.user, "view:financials")) {
+            return projects.map(p => ({
+                ...p,
+                billableRate: null,
+                managerRate: null,
+                seniorRate: null,
+                associateRate: null
+            }))
+        }
+
+        return projects
     } catch (error) {
         console.error("Failed to fetch projects:", error)
         return []
@@ -94,6 +106,15 @@ export async function getProjectByCode(code: string) {
                 }
             }
         })
+        if (project && !can(session.user, "view:financials")) {
+            return {
+                ...project,
+                billableRate: null,
+                managerRate: null,
+                seniorRate: null,
+                associateRate: null
+            }
+        }
         return project
     } catch (error) {
         console.error("Failed to fetch project:", error)
