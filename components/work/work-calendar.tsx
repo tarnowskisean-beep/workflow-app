@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { TaskDetailSheet } from "./task-detail-sheet"
 import { User } from "@prisma/client"
+import { projectRecurringDates } from "@/lib/recurrence"
 
 interface WorkCalendarProps {
     items: any[]
@@ -63,6 +64,46 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
             end: endOfWeek(currentDate)
         })
 
+    // Helper: Project future dates
+    const projectFutureTasks = (currentItems: any[], endDate: Date) => {
+        const ghosts: any[] = []
+        currentItems.forEach(item => {
+            if (item.isRecurring && item.recurrenceInterval && item.dueDate) {
+                // Determine start date for projection:
+                // If task is overdue, start from today? 
+                // Or start from task.dueDate?
+                // We want to show future slots.
+                // Let's project from the CURRENT due date forward.
+                const projectedDates = projectRecurringDates(
+                    new Date(item.dueDate),
+                    item.recurrenceInterval,
+                    item.recurrenceDays,
+                    endDate
+                )
+
+                projectedDates.forEach(date => {
+                    // Normalize to UTC Midnight to match DB convention and ensure consistent comparisons across timezones
+                    // 'date' from projectRecurringDates is Local Midnight (00:00)
+                    // We want to treat it as UTC Midnight for the purpose of toISOString() in the filter
+                    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+
+                    ghosts.push({
+                        ...item,
+                        id: `ghost-${item.id}-${utcDate.toISOString()}`,
+                        dueDate: utcDate, // Now strictly UTC midnight
+                        isGhost: true,
+                        status: "OPEN" // Force open look
+                    })
+                })
+            }
+        })
+        return ghosts
+    }
+
+    const viewEnd = view === "month" ? endOfWeek(endOfMonth(currentDate)) : endOfWeek(currentDate)
+    const ghostTasks = projectFutureTasks(items, viewEnd)
+    const allTasks = [...items, ...ghostTasks]
+
     const weeks = []
     for (let i = 0; i < days.length; i += 7) {
         weeks.push(days.slice(i, i + 7))
@@ -70,7 +111,7 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
 
     // Task placement
     const getTasksForDay = (date: Date) => {
-        return items.filter(item => {
+        return allTasks.filter(item => {
             if (!item.dueDate) return false
             // Fix: Compare using UTC date string from the item (source of truth) vs Local date string of the cell
             // This prevents "2026-02-13T00:00:00Z" (Feb 13) from being shown as Feb 12 in PST
@@ -163,6 +204,22 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
                                             <button
                                                 key={task.id}
                                                 onClick={() => {
+                                                    // If ghost, open the ACTIVE task it's based on (which shares ID except for prefix)
+                                                    // Actually, we passed ...item, so item.id was modified.
+                                                    // Let's pass the ORIGINAL item as 'sourceTask' or similar if we want to edit IT.
+                                                    // For now, simpler: If isGhost, maybe don't open? Or open the original?
+                                                    // Constructing ID is tricky if we don't have it.
+                                                    // But we cloned it.
+                                                    // Let's just create raw object above. 
+                                                    // Wait, `selectedTask` opens the sheet.
+                                                    // If we open a ghost in the sheet, the sheet thinks it's a real task with ID 'ghost-...'.
+                                                    // Saving it would fail or try to create new?
+                                                    // The sheet likely tries `updateTask(task.id)`. This will fail for 'ghost-...'.
+                                                    // Solution: Disable click for now, OR show a toast "Future recurrence".
+                                                    if (task.isGhost) {
+                                                        alert("This is a future instance of a recurring task.\nTo edit the schedule, please edit the current active task.")
+                                                        return
+                                                    }
                                                     setSelectedTask(task)
                                                     setIsSheetOpen(true)
                                                 }}
@@ -170,7 +227,9 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
                                                     "w-full text-left text-[11px] px-2 py-1.5 rounded-[6px] border flex items-start gap-2 transition-all hover:shadow-sm hover:z-10 relative group/task",
                                                     task.status === "DONE"
                                                         ? "bg-slate-50 text-muted-foreground opacity-60 line-through border-transparent"
-                                                        : "bg-white border-border/60 hover:border-primary/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
+                                                        : task.isGhost
+                                                            ? "bg-white/50 border-dashed border-slate-300 text-muted-foreground hover:bg-white hover:border-solid"
+                                                            : "bg-white border-border/60 hover:border-primary/30 shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
                                                 )}
                                             >
                                                 <div className={cn("mt-1 w-1.5 h-1.5 rounded-full shrink-0", getPriorityDotColor(task.priority))} />
