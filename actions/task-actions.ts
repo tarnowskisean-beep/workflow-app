@@ -111,17 +111,46 @@ export async function createTask(formData: FormData) {
         assigneeId: formData.get("assigneeId") === "me" ? session.user.id : (formData.get("assigneeId") === "none" ? null : formData.get("assigneeId")),
     }
 
-    if (rawData.projectId) {
-        const canAccess = await verifyProjectAccess(rawData.projectId as string, session.user.id)
+    const validated = createTaskSchema.parse(rawData)
+
+    // If recurring, overwrite the due date with the calculated first instance
+    // using "Today" as the anchor (or the provided date if we wanted to enforce start date)
+    // Since UI hides the input, we assume "Start from Today".
+    let finalDueDate = validated.dueDate
+    if (validated.isRecurring && validated.recurrenceInterval) {
+        // Use Today (Server Time) as start anchor
+        finalDueDate = calculateFirstInstance(new Date(), validated.recurrenceInterval, validated.recurrenceDays)
+    }
+
+    if (validated.projectId) {
+        const canAccess = await verifyProjectAccess(validated.projectId as string, session.user.id)
         if (!canAccess) return { success: false, message: "Unauthorized project access" }
     }
 
     try {
-        const validated = createTaskSchema.parse(rawData)
-
         // Security / Logic check: If recurring weekly, ensure days are present
         if (validated.isRecurring && validated.recurrenceInterval === "WEEKLY" && !validated.recurrenceDays) {
             return { success: false, message: "Weekly recurrence requires at least one day selected." }
+        }
+
+        // Idempotency Check: Prevent duplicate creation if same task was created in last 10 seconds
+        const duplicateCheck = await prisma.workItem.findFirst({
+            where: {
+                title: validated.title,
+                projectId: validated.projectId || null,
+                dueDate: finalDueDate, // Use Final Date
+                isRecurring: validated.isRecurring,
+                recurrenceInterval: validated.isRecurring ? validated.recurrenceInterval : null,
+                recurrenceDays: validated.isRecurring ? validated.recurrenceDays : null,
+                createdAt: {
+                    gt: new Date(Date.now() - 10000) // Created in last 10s
+                }
+            }
+        })
+
+        if (duplicateCheck) {
+            console.log("Duplicate task creation prevented:", duplicateCheck.id)
+            return { success: true, message: "Task already created" } // Return success to UI so it closes dialog
         }
 
         const task = await prisma.workItem.create({
@@ -133,7 +162,7 @@ export async function createTask(formData: FormData) {
                 driveLink: validated.driveLink || null,
                 driveLinkType: validated.driveLinkType || null,
                 requiresDocument: validated.requiresDocument,
-                dueDate: validated.dueDate,
+                dueDate: finalDueDate, // Use Final Date
                 assigneeId: validated.assigneeId || session.user.id, // Default to creator if not specified
                 isRecurring: validated.isRecurring,
                 recurrenceInterval: validated.isRecurring ? validated.recurrenceInterval : null,

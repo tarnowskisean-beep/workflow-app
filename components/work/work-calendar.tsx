@@ -68,6 +68,9 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
     const projectFutureTasks = (currentItems: any[], endDate: Date) => {
         const ghosts: any[] = []
         currentItems.forEach(item => {
+            // Only project from active tasks to avoid duplicates (completed tasks have already spawned their next instance)
+            if (item.status === 'DONE') return
+
             if (item.isRecurring && item.recurrenceInterval && item.dueDate) {
                 // Determine start date for projection:
                 // If task is overdue, start from today? 
@@ -82,15 +85,15 @@ export function WorkCalendar({ items, users, currentUserId, currentUserRole }: W
                 )
 
                 projectedDates.forEach(date => {
-                    // Normalize to UTC Midnight to match DB convention and ensure consistent comparisons across timezones
-                    // 'date' from projectRecurringDates is Local Midnight (00:00)
-                    // We want to treat it as UTC Midnight for the purpose of toISOString() in the filter
-                    const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+                    // date is now guaranteed to be UTC midnight from projectRecurringDates
+
+                    // Prevent duplicate if projection includes the current due date (which it shouldn't, but safety first)
+                    if (date.getTime() === new Date(item.dueDate).getTime()) return
 
                     ghosts.push({
                         ...item,
-                        id: `ghost-${item.id}-${utcDate.toISOString()}`,
-                        dueDate: utcDate, // Now strictly UTC midnight
+                        id: `ghost-${item.id}-${date.toISOString()}`,
+                        dueDate: date,
                         isGhost: true,
                         status: "OPEN" // Force open look
                     })
