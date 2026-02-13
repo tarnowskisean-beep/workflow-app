@@ -195,7 +195,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                 >
                                     <SelectTrigger>
                                         <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task"} />
-                                    </SelectContent>
+                                    </SelectTrigger>
                                     <SelectContent>
                                         {(() => {
                                             const project = projects.find(p => p.id === selectedProjectId)
