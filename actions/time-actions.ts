@@ -7,7 +7,7 @@ import { z } from "zod"
 import { startOfDay, endOfDay, startOfWeek, endOfWeek } from "date-fns"
 
 const timeEntrySchema = z.object({
-    workItemId: z.string().min(1, "Task is required"),
+    workItemId: z.string().optional(),
     durationMinutes: z.coerce.number().min(1, "Duration must be at least 1 minute"),
     notes: z.string().optional(),
     date: z.string().refine((val) => !isNaN(Date.parse(val)), {

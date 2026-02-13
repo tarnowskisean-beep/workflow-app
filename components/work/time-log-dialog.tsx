@@ -76,10 +76,11 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
         const notes = (document.getElementById('notes') as HTMLTextAreaElement)?.value
 
-        await startTimer(selectedProjectId, selectedTaskId || undefined, notes)
+        // Handle "no-task" sentinel
+        const taskId = (!selectedTaskId || selectedTaskId === "none" || selectedTaskId === "no-task") ? undefined : selectedTaskId
+
+        await startTimer(selectedProjectId, taskId, notes)
         onOpenChange(false)
-        // onComplete() // Don't refresh list yet, better to just close dialog. 
-        // Or if list shows running, then yes.
     }
 
     async function handleSubmit(formData: FormData) {
@@ -91,21 +92,22 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 alert("Please select a project")
                 return
             }
-            if (!selectedTaskId || selectedTaskId === "none") {
-                alert("Please select a task")
-                return
-            }
+            // Task is now optional
 
             let result
+
+            // Handle "no-task" sentinel
+            const taskId = (!selectedTaskId || selectedTaskId === "none" || selectedTaskId === "no-task") ? "" : selectedTaskId
+
             // If editing
             if (entryToEdit) {
                 formData.set("date", new Date(date).toISOString())
                 formData.set("projectId", selectedProjectId)
-                formData.set("workItemId", selectedTaskId)
+                formData.set("workItemId", taskId)
                 result = await updateTimeEntry(entryToEdit.id, formData)
             } else {
                 // Creating new
-                formData.append("workItemId", selectedTaskId)
+                if (taskId) formData.append("workItemId", taskId)
                 formData.append("projectId", selectedProjectId)
 
                 // Ensure date is valid before appending
@@ -185,7 +187,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                         <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task"} />
                                     </SelectTrigger>
                                     <SelectContent>
-
+                                        <SelectItem value="no-task">General (No Task)</SelectItem>
                                         {tasks
                                             .filter(t => t.projectId === selectedProjectId)
                                             .map(t => (
