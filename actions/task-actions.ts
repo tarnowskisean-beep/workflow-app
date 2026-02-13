@@ -375,7 +375,7 @@ export async function getWorkItems(filters?: {
             where: whereClause,
             orderBy: { updatedAt: 'desc' }, // or priority
             include: {
-                project: { select: { code: true, name: true } },
+                project: { select: { code: true, name: true, allowedTaskTypes: true } },
                 assignee: { select: { name: true, avatarUrl: true } }
             }
         })
@@ -398,6 +398,7 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
             priority: formData.get("priority") as string,
             dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string) : null,
             assigneeId: formData.get("assigneeId") as string || null,
+            taskType: formData.get("taskType") as string || null,
         }
 
         console.log("SERVER ACTION: updateTaskDetails", { taskId, rawData })
@@ -444,7 +445,8 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
                 description: rawData.description,
                 priority: rawData.priority,
                 dueDate: rawData.dueDate,
-                assigneeId: rawData.assigneeId
+                assigneeId: rawData.assigneeId,
+                taskType: rawData.taskType
             }
         })
 

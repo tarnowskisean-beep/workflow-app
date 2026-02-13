@@ -327,7 +327,9 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
         }
 
         // Aggregate Task
+        // @ts-ignore
         const tId = entry.workItemId || entry.taskType || "no-task"
+        // @ts-ignore
         const tName = entry.workItem?.title || entry.taskType || "No Task"
         if (!taskMap.has(tId)) taskMap.set(tId, { id: tId, name: tName, totalHours: 0, billableHours: 0, billableAmount: 0, percent: 0 })
         const tItem = taskMap.get(tId)!

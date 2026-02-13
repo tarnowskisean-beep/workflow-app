@@ -77,7 +77,13 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
     const [dueDate, setDueDate] = useState<Date | undefined>(task?.dueDate ? new Date(task.dueDate) : undefined)
     const [title, setTitle] = useState(task?.title || "")
     const [description, setDescription] = useState(task?.description || "")
+    const [taskType, setTaskType] = useState(task?.taskType || "")
     const [driveLink, setDriveLink] = useState(task?.driveLink || "")
+
+    // Parse allowed task types from project
+    const allowedTaskTypes = task?.project?.allowedTaskTypes
+        ? (task.project.allowedTaskTypes as string).split(',').map(t => t.trim()).filter(Boolean)
+        : ["General"] // Flashback to default if none? Or empty?
 
     const canEditProperties = currentUserRole === "MANAGER" || currentUserRole === "SENIOR" || currentUserRole === "ADMIN" || (currentUserId && task?.assigneeId === currentUserId)
 
@@ -104,6 +110,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
             setDueDate(task.dueDate ? new Date(task.dueDate) : undefined)
             setTitle(task.title)
             setDescription(task.description || "")
+            setTaskType(task.taskType || "")
             setDriveLink(task.driveLink || "")
         }
     }, [task, open])
@@ -127,10 +134,11 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
     }
 
     // Explicit save for immediate interactions (Select, DatePicker) to avoid stale state in closures
-    async function saveProperty(updates: { assigneeId?: string, priority?: string, dueDate?: Date, title?: string, description?: string }) {
+    async function saveProperty(updates: { assigneeId?: string, priority?: string, taskType?: string, dueDate?: Date, title?: string, description?: string }) {
         // 1. Optimistic Update
         if (updates.assigneeId !== undefined) setAssigneeId(updates.assigneeId)
         if (updates.priority !== undefined) setPriority(updates.priority)
+        if (updates.taskType !== undefined) setTaskType(updates.taskType)
         if (updates.dueDate !== undefined) setDueDate(updates.dueDate)
         if (updates.title !== undefined) setTitle(updates.title)
 
@@ -139,6 +147,7 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
         formData.set("title", updates.title ?? title)
         formData.set("description", updates.description ?? description)
         formData.set("priority", updates.priority ?? priority)
+        formData.set("taskType", updates.taskType ?? taskType)
 
         const d = updates.dueDate !== undefined ? updates.dueDate : dueDate
         if (d) formData.set("dueDate", d.toISOString())
@@ -392,23 +401,23 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
                                     </Popover>
                                 </div>
 
-                                {/* Priority */}
+                                {/* Task Type (Replaces Priority) */}
                                 <div className="col-span-6 space-y-2">
-                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Priority</Label>
+                                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Task Type</Label>
                                     <div className="relative">
                                         <select
-                                            value={priority}
-                                            onChange={(e) => saveProperty({ priority: e.target.value })}
+                                            value={taskType}
+                                            onChange={(e) => saveProperty({ taskType: e.target.value })}
                                             className={cn(
                                                 "w-full appearance-none bg-muted/40 border border-transparent hover:bg-muted/60 rounded-lg px-3 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed",
                                                 !canEditProperties && "opacity-70 cursor-not-allowed"
                                             )}
                                             disabled={!canEditProperties}
                                         >
-                                            <option value="P0">Critical (P0)</option>
-                                            <option value="P1">High (P1)</option>
-                                            <option value="P2">Normal (P2)</option>
-                                            <option value="P3">Low (P3)</option>
+                                            <option value="" disabled>Select Type...</option>
+                                            {allowedTaskTypes.map((t: string) => (
+                                                <option key={t} value={t}>{t}</option>
+                                            ))}
                                         </select>
                                         {/* Custom chevron to match design */}
                                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
