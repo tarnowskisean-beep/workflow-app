@@ -296,7 +296,8 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
             projectId: entry.projectId || "no-project",
             projectName: entry.project?.name || "No Project",
             userName: entry.user?.name || "Unknown User",
-            taskTitle: entry.workItem?.title || "No Task",
+            // @ts-ignore
+            taskTitle: entry.workItem?.title || entry.taskType || "No Task",
             description: entry.notes || "",
             hours: duration,
             billableAmount: amount
@@ -326,8 +327,8 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
         }
 
         // Aggregate Task
-        const tId = entry.workItemId || "no-task"
-        const tName = entry.workItem?.title || "No Task"
+        const tId = entry.workItemId || entry.taskType || "no-task"
+        const tName = entry.workItem?.title || entry.taskType || "No Task"
         if (!taskMap.has(tId)) taskMap.set(tId, { id: tId, name: tName, totalHours: 0, billableHours: 0, billableAmount: 0, percent: 0 })
         const tItem = taskMap.get(tId)!
         tItem.totalHours += duration
