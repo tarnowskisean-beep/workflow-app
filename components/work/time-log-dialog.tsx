@@ -35,7 +35,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
     // State for selection if generic
     const [selectedProjectId, setSelectedProjectId] = useState<string>("")
-    const [selectedTaskId, setSelectedTaskId] = useState<string>("")
+    const [selectedTaskType, setSelectedTaskType] = useState<string>("")
 
     // Debug logging effect
     useEffect(() => {
@@ -53,14 +53,14 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
             setDate(new Date(entryToEdit.startedAt).toISOString().split('T')[0])
             setSelectedProjectId(entryToEdit.projectId || "")
             // Use taskType if available, fallback to workItemId or empty
-            setSelectedTaskId(entryToEdit.taskType || entryToEdit.workItemId || "")
+            setSelectedTaskType(entryToEdit.taskType || entryToEdit.workItemId || "")
         } else if (initialValues) {
             setDate(new Date().toISOString().split('T')[0]) // Default to today for new entry
             setSelectedProjectId(initialValues.projectId || "")
-            setSelectedTaskId(initialValues.taskId || "")
+            setSelectedTaskType(initialValues.taskId || "")
         } else if (task) {
             setSelectedProjectId(task.projectId || "")
-            setSelectedTaskId("")
+            setSelectedTaskType("")
         } else {
             // Reset if creating new
             if (open && !entryToEdit) {
@@ -68,7 +68,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 // This logic is tricky if 'open' stays true. 
                 // Ideally we reset only on the transition open=true.
                 setSelectedProjectId("")
-                setSelectedTaskId("")
+                setSelectedTaskType("")
             }
         }
     }, [entryToEdit, task, initialValues, open])
@@ -89,8 +89,8 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
 
         const notes = (document.getElementById('notes') as HTMLTextAreaElement)?.value
 
-        // selectedTaskId now holds the taskType string
-        const taskType = selectedTaskId
+        // selectedTaskType now holds the taskType string
+        const taskType = selectedTaskType
 
         await startTimer(selectedProjectId, taskType || undefined, undefined, notes)
         onOpenChange(false)
@@ -105,15 +105,15 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                 alert("Please select a project")
                 return
             }
-            if (!selectedTaskId) {
+            if (!selectedTaskType) {
                 alert("Please select a task type")
                 return
             }
 
             let result
 
-            // selectedTaskId now holds the taskType string
-            const taskType = selectedTaskId
+            // selectedTaskType now holds the taskType string
+            const taskType = selectedTaskType
 
             // If editing
             if (entryToEdit) {
@@ -149,19 +149,13 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         }
     }
 
-    async function handleDelete() {
-        if (!entryToEdit) return
-        if (!confirm("Are you sure you want to delete this time entry?")) return
-        setLoading(true)
-        await deleteTimeEntry(entryToEdit.id)
-        setLoading(false)
-        onComplete()
-    }
+    // ... (handleDelete) ...
 
     const isEditMode = !!entryToEdit
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
+            {/* ... (DialogContent -> Header) ... */}
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -178,7 +172,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                     value={selectedProjectId}
                                     onValueChange={(val) => {
                                         setSelectedProjectId(val)
-                                        setSelectedTaskId("") // Reset task when project changes
+                                        setSelectedTaskType("") // Reset task when project changes
                                     }}
                                 >
                                     <SelectTrigger>
@@ -195,21 +189,27 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Task</Label>
+                                <Label>Task Type</Label>
                                 <Select
-                                    value={selectedTaskId}
-                                    onValueChange={setSelectedTaskId}
+                                    value={selectedTaskType}
+                                    onValueChange={setSelectedTaskType}
                                     disabled={!selectedProjectId}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task"} />
+                                        <SelectValue placeholder={!selectedProjectId ? "Select a project first" : "Select a task type"} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {(() => {
                                             const project = projects.find(p => p.id === selectedProjectId)
-                                            if (!project || !project.allowedTaskTypes) return null
+                                            if (!project || !project.allowedTaskTypes) {
+                                                return <SelectItem value="none" disabled>No types defined for project</SelectItem>
+                                            }
 
-                                            const types = project.allowedTaskTypes.split(',').map((t: string) => t.trim())
+                                            const types = project.allowedTaskTypes.split(',').map((t: string) => t.trim()).filter(Boolean)
+
+                                            if (types.length === 0) {
+                                                return <SelectItem value="none" disabled>No types defined for project</SelectItem>
+                                            }
 
                                             return types.map((type: string) => (
                                                 <SelectItem key={type} value={type}>
