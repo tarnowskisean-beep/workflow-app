@@ -19,7 +19,8 @@ export function DashboardCharts({ taskStatusData, timeLogData }: DashboardCharts
 
     const handleBarClick = (data: any) => {
         if (data && data.fullDate) {
-            router.push(`/time?date=${data.fullDate}&view=day`)
+            // Navigate to Reports filtered for this specific day
+            router.push(`/reports?from=${data.fullDate}&to=${data.fullDate}`)
         }
     }
 
