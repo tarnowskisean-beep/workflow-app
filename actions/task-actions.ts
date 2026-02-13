@@ -8,6 +8,7 @@ import { redirect } from "next/navigation"
 import { addDays, addWeeks, addMonths, addQuarters, addYears } from "date-fns"
 import { logSecurityEvent } from "@/lib/audit"
 import { ROLES, TASK_STATUS, PRIORITY } from "@/lib/constants"
+import { calculateFirstInstance, calculateNextDueDate } from "@/lib/recurrence"
 
 // Helper: Verify User Access to Project
 async function verifyProjectAccess(projectId: string, userId: string) {
