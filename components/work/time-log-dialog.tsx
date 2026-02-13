@@ -67,17 +67,19 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         } else if (task) {
             setSelectedProjectId(task.projectId || "")
             setSelectedTaskType(task.taskType || "")
+            // Also reset date if provided (e.g. from wrapper)
+            if (defaultDate) setDate(defaultDate)
         } else {
             // Reset if creating new
             if (open && !entryToEdit) {
-                // Only reset if we are opening a fresh dialog
-                // This logic is tricky if 'open' stays true. 
-                // Ideally we reset only on the transition open=true.
+                // Reset date to defaultDate (current page date) or Today
+                setDate(defaultDate || new Date().toISOString().split('T')[0])
+
                 setSelectedProjectId("")
                 setSelectedTaskType("")
             }
         }
-    }, [entryToEdit, task, initialValues, open])
+    }, [entryToEdit, task, initialValues, open, defaultDate])
 
     async function handleStartTimer() {
         if (!selectedProjectId) {

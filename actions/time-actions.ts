@@ -134,13 +134,22 @@ export async function getWeeklyEntries(date: Date) {
 
     // Calculate start/end of week (Monday start)
     const inputDate = new Date(date)
-    const start = startOfWeek(inputDate, { weekStartsOn: 0 }) // 0 = Sunday
+    // We expand the search window by +/- 1 day (or 2) to account for Timezone differences between Server (UTC) and Client (Local)
+    // e.g. Saturday 11pm EST is Sunday 4am UTC. If we strictly fetch UTC week, we miss it.
+    const start = startOfWeek(inputDate, { weekStartsOn: 0 })
     const end = endOfWeek(inputDate, { weekStartsOn: 0 })
+
+    // Add buffer
+    const searchStart = new Date(start)
+    searchStart.setDate(searchStart.getDate() - 1)
+
+    const searchEnd = new Date(end)
+    searchEnd.setDate(searchEnd.getDate() + 1)
 
     return await prisma.timeEntry.findMany({
         where: {
             userId: session.user.id,
-            startedAt: { gte: start, lte: end },
+            startedAt: { gte: searchStart, lte: searchEnd },
             endedAt: { not: null } // Exclude active timers from list view if preferred, or include them? Let's exclude for now.
         },
         include: {
