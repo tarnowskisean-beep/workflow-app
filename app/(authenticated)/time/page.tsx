@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { parseLocalDate, formatLocalDate } from "@/lib/date-utils"
 import { getWeeklyEntries } from "@/actions/time-actions"
+import { format } from "date-fns"
 import { WeekNavigator } from "@/components/work/week-navigator"
 import { WeekTabs } from "@/components/work/week-tabs"
 import { TimeEntryList } from "@/components/work/time-entry-list"
@@ -46,9 +47,18 @@ export default async function TimePage({ searchParams }: { searchParams: Promise
     const loggedDates = allUserEntries.map(e => e.createdAt)
 
     // Filter for the specific day view if needed
+    // Use consistent date formatting for comparison
+    const targetDateStr = format(date, "yyyy-MM-dd")
     const dailyEntries = weeklyEntries.filter(e => {
-        const entryDate = new Date(e.startedAt)
-        return entryDate.toDateString() === date.toDateString()
+        const entryDateStr = format(new Date(e.startedAt), "yyyy-MM-dd")
+        return entryDateStr === targetDateStr
+    })
+
+    // Calculate daily totals on Server to ensure consistency with UTC-based filtering
+    const dailyTotals: Record<string, number> = {}
+    weeklyEntries.forEach(entry => {
+        const dateKey = format(new Date(entry.startedAt), "yyyy-MM-dd")
+        dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + entry.durationSeconds
     })
 
     const entriesToDisplay = view === 'week' ? weeklyEntries : dailyEntries
@@ -74,7 +84,7 @@ export default async function TimePage({ searchParams }: { searchParams: Promise
 
                 {/* Day Tabs - Only show in Day view */}
                 {view === 'day' && (
-                    <WeekTabs currentDateStr={dateStr} weeklyEntries={weeklyEntries} />
+                    <WeekTabs currentDateStr={dateStr} weeklyEntries={weeklyEntries} dailyTotals={dailyTotals} />
                 )}
             </div>
 

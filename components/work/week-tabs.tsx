@@ -11,9 +11,10 @@ import { parseLocalDate } from "@/lib/date-utils"
 interface WeekTabsProps {
     currentDateStr: string
     weeklyEntries: any[]
+    dailyTotals: Record<string, number> // Passed from server
 }
 
-export function WeekTabs({ currentDateStr, weeklyEntries }: WeekTabsProps) {
+export function WeekTabs({ currentDateStr, weeklyEntries, dailyTotals }: WeekTabsProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -22,13 +23,6 @@ export function WeekTabs({ currentDateStr, weeklyEntries }: WeekTabsProps) {
 
     // Calculate week start (Monday)
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 })
-
-    // Calculate totals per day
-    const dailyTotals: Record<string, number> = {}
-    weeklyEntries.forEach(entry => {
-        const dateKey = new Date(entry.startedAt).toDateString()
-        dailyTotals[dateKey] = (dailyTotals[dateKey] || 0) + entry.durationSeconds
-    })
 
     const getDayLink = (date: Date) => {
         const dateString = format(date, "yyyy-MM-dd")
@@ -45,12 +39,16 @@ export function WeekTabs({ currentDateStr, weeklyEntries }: WeekTabsProps) {
         return `${hours}:${minutes.toString().padStart(2, '0')}`
     }
 
+    // Weekly total provided by server totals
+    const weeklyTotal = Object.values(dailyTotals).reduce((acc, val) => acc + val, 0)
+
     return (
         <div className="flex border-b w-full overflow-x-auto no-scrollbar">
             {Array.from({ length: 7 }).map((_, i) => {
                 const day = addDays(weekStart, i)
                 const isSelected = isSameDay(day, currentDate)
-                const dateKey = day.toDateString()
+                // Use yyyy-MM-dd key to match server map
+                const dateKey = format(day, "yyyy-MM-dd")
                 const totalSeconds = dailyTotals[dateKey] || 0
                 const isToday = isSameDay(day, new Date())
 
@@ -83,7 +81,7 @@ export function WeekTabs({ currentDateStr, weeklyEntries }: WeekTabsProps) {
             <div className="flex flex-col items-center justify-center min-w-[100px] flex-1 py-3 px-2 text-sm font-medium border-b-2 border-transparent -mb-px text-muted-foreground bg-muted/5">
                 <span className="text-xs uppercase mb-1">Total</span>
                 <span className="text-xl font-bold text-foreground">
-                    {formatDuration(weeklyEntries.reduce((acc, e) => acc + e.durationSeconds, 0))}
+                    {formatDuration(weeklyTotal)}
                 </span>
             </div>
         </div>
