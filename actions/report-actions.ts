@@ -357,22 +357,42 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
         }
     }
 
-    const finalizeArray = (map: Map<string, ReportGroupItem>) => Array.from(map.values())
-        .map(item => ({ ...item, percent: totalHours > 0 ? (item.totalHours / totalHours) * 100 : 0 }))
-        .sort((a, b) => b.totalHours - a.totalHours)
+}
 
-    return {
-        summary: {
-            totalHours,
-            billableHours,
-            nonBillableHours: totalHours - billableHours,
-            billableAmount,
-            uninvoicedAmount: billableAmount
-        },
-        byProject: finalizeArray(projectMap),
-        byUser: finalizeArray(userMap),
-        byTask: finalizeArray(taskMap),
-        entries: includeEntries ? reportEntries : []
-    }
+const finalizeArray = (map: Map<string, ReportGroupItem>) => Array.from(map.values())
+    .map(item => ({ ...item, percent: totalHours > 0 ? (item.totalHours / totalHours) * 100 : 0 }))
+    .sort((a, b) => b.totalHours - a.totalHours)
+
+return {
+    summary: {
+        totalHours,
+        billableHours,
+        nonBillableHours: totalHours - billableHours,
+        billableAmount,
+        uninvoicedAmount: billableAmount
+    },
+    byProject: finalizeArray(projectMap),
+    byUser: finalizeArray(userMap),
+    byTask: finalizeArray(taskMap),
+    entries: includeEntries ? reportEntries : []
+}
+}
+
+export async function getUniqueTaskTitles() {
+    const session = await auth()
+    if (!session?.user?.id) return []
+
+    const tasks = await prisma.workItem.findMany({
+        select: { title: true },
+        distinct: ['title']
+    })
+
+    const uniqueTitles = new Set<string>()
+    tasks.forEach(task => {
+        const normalized = task.title.replace(/\s-\s[A-Za-z0-9]+$/, "")
+        uniqueTitles.add(normalized)
+    })
+
+    return Array.from(uniqueTitles).sort()
 }
 

@@ -22,7 +22,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 
-export function ReportFilters({ projects, users }: { projects: any[], users: any[] }) {
+export function ReportFilters({ projects, users, tasks }: { projects: any[], users: any[], tasks: string[] }) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -36,6 +36,7 @@ export function ReportFilters({ projects, users }: { projects: any[], users: any
 
     const projectId = searchParams.get("projectId") || "all"
     const userId = searchParams.get("userId") || "all"
+    const taskId = searchParams.get("taskId") || "all"
 
     const updateParams = (newParams: Record<string, string>) => {
         const params = new URLSearchParams(searchParams)
@@ -117,6 +118,18 @@ export function ReportFilters({ projects, users }: { projects: any[], users: any
                     <SelectItem value="all">All Users</SelectItem>
                     {users.map((u) => (
                         <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+
+            <Select value={taskId} onValueChange={(val) => updateParams({ taskId: val })}>
+                <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="All Tasks" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">All Tasks</SelectItem>
+                    {tasks.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
                     ))}
                 </SelectContent>
             </Select>

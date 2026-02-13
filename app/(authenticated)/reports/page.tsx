@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { getComprehensiveReport } from "@/actions/report-actions"
+import { getComprehensiveReport, getUniqueTaskTitles } from "@/actions/report-actions"
 import { getProjects } from "@/actions/project-actions"
 import { getUsers } from "@/actions/user-actions"
 import { ReportsDashboard } from "@/components/reports/reports-dashboard"
@@ -27,10 +27,12 @@ export default async function ReportsPage({
     const taskId = resolvedParams.taskId
 
     // Fetch Data in Parallel
-    const [report, projects, users] = await Promise.all([
+    // Fetch Data in Parallel
+    const [report, projects, users, taskTitles] = await Promise.all([
         getComprehensiveReport(from, to, projectId, userId, taskId),
         getProjects(),
-        getUsers()
+        getUsers(),
+        getUniqueTaskTitles()
     ])
 
     return (
@@ -45,7 +47,7 @@ export default async function ReportsPage({
                 </div>
             </div>
 
-            <ReportFilters projects={projects} users={users} />
+            <ReportFilters projects={projects} users={users} tasks={taskTitles} />
 
             <ReportsDashboard report={report} />
         </div>
