@@ -30,10 +30,12 @@ export default async function TimePage({ searchParams }: { searchParams: Promise
                     { assigneeId: null }
                 ]
             },
-            select: { id: true, title: true, projectId: true, project: { select: { name: true } } }
+            select: { id: true, title: true, projectId: true, project: { select: { name: true } } },
+            orderBy: { title: 'asc' }
         }),
         prisma.project.findMany({
-            select: { id: true, name: true }
+            select: { id: true, name: true },
+            orderBy: { name: 'asc' }
         }),
         prisma.timeEntry.findMany({
             where: { userId: session.user.id },

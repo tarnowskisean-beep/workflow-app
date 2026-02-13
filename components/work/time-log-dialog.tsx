@@ -165,7 +165,7 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
                                     <SelectContent>
 
                                         {tasks
-                                            .filter(t => t.project?.name === projects.find(p => p.id === selectedProjectId)?.name || (t.projectId === selectedProjectId))
+                                            .filter(t => t.projectId === selectedProjectId)
                                             .map(t => (
                                                 <SelectItem key={t.id} value={t.id}>
                                                     {t.title}
