@@ -82,7 +82,63 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         // Or if list shows running, then yes.
     }
 
-    // ... handleSubmit
+    async function handleSubmit(formData: FormData) {
+        setLoading(true)
+
+        try {
+            // Validation
+            if (!selectedProjectId || selectedProjectId === "none") {
+                alert("Please select a project")
+                return
+            }
+            if (!selectedTaskId || selectedTaskId === "none") {
+                alert("Please select a task")
+                return
+            }
+
+            let result
+            // If editing
+            if (entryToEdit) {
+                formData.set("date", new Date(date).toISOString())
+                formData.set("projectId", selectedProjectId)
+                formData.set("workItemId", selectedTaskId)
+                result = await updateTimeEntry(entryToEdit.id, formData)
+            } else {
+                // Creating new
+                formData.append("workItemId", selectedTaskId)
+                formData.append("projectId", selectedProjectId)
+
+                // Ensure date is valid before appending
+                const submitDate = date ? new Date(date) : new Date()
+                formData.set("date", submitDate.toISOString())
+
+                result = await logTime(formData)
+            }
+
+            if (result?.error) {
+                alert(typeof result.error === 'string' ? result.error : "Failed to save time entry")
+                return
+            }
+
+            onComplete()
+        } catch (error) {
+            console.error("Submit error:", error)
+            alert("An unexpected error occurred")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    async function handleDelete() {
+        if (!entryToEdit) return
+        if (!confirm("Are you sure you want to delete this time entry?")) return
+        setLoading(true)
+        await deleteTimeEntry(entryToEdit.id)
+        setLoading(false)
+        onComplete()
+    }
+
+    const isEditMode = !!entryToEdit
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
