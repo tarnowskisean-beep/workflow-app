@@ -164,10 +164,7 @@ export function ReportsDashboard({ report }: ReportsDashboardProps) {
                         <span className="text-sm text-muted-foreground font-medium">Billable Amount</span>
                         <span className="text-2xl font-bold">{formatCurrency(summary.billableAmount)}</span>
                     </div>
-                    <div className="flex flex-col gap-1">
-                        <span className="text-sm text-muted-foreground font-medium">Uninvoiced Amount</span>
-                        <span className="text-2xl font-bold">{formatCurrency(summary.uninvoicedAmount)}</span>
-                    </div>
+
                 </div>
             </div>
 
