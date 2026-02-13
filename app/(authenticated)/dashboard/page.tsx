@@ -12,6 +12,8 @@ import { Suspense } from "react"
 import { DashboardStatsSkeleton, DashboardChartsSkeleton, DashboardActivitySkeleton } from "@/components/dashboard/skeletons"
 import { TASK_STATUS } from "@/lib/constants"
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ projectId?: string, userId?: string, from?: string, to?: string }> }) {
     const session = await auth()
     if (!session?.user?.id) return null
@@ -19,7 +21,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     const { projectId, userId, from, to } = await searchParams
 
     const [allProjects, allUsers] = await Promise.all([
-        prisma.project.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+        prisma.project.findMany({ select: { id: true, name: true, allowedTaskTypes: true }, orderBy: { name: 'asc' } }),
         prisma.user.findMany({ select: { id: true, name: true, avatarUrl: true }, orderBy: { name: 'asc' } }) // Ensure avatarUrl for assignees
     ])
 

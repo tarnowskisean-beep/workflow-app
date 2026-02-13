@@ -42,8 +42,14 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
         if (open) {
             console.log("TimeLogDialog - Projects:", projects)
             const currentProject = projects.find(p => p.id === selectedProjectId)
+            console.log("TimeLogDialog - Selected Project ID:", selectedProjectId)
             console.log("TimeLogDialog - Selected Project Data:", currentProject)
-            console.log("TimeLogDialog - Allowed Task Types:", currentProject?.allowedTaskTypes)
+            console.log("TimeLogDialog - Allowed Task Types Raw:", currentProject?.allowedTaskTypes)
+
+            if (currentProject?.allowedTaskTypes) {
+                const types = currentProject.allowedTaskTypes.split(',').map((t: string) => t.trim()).filter(Boolean)
+                console.log("TimeLogDialog - Parsed Types:", types)
+            }
         }
     }, [open, projects, selectedProjectId])
 
