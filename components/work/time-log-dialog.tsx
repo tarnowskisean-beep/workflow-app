@@ -143,16 +143,13 @@ export function TimeLogDialog({ open, onOpenChange, task, tasks = [], projects =
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px]">
-                {/* ... Header ... */}
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {isEditMode ? "Edit Time Entry" : "Log Time"}
                     </DialogTitle>
                 </DialogHeader>
                 <form action={handleSubmit} className="space-y-4">
-                    {/* ... Form Fields ... */}
-
-                    {/* ... Project/Task Selects ... */}
+                    {/* Project/Task Selection - Show if not pre-bound to a SPECIFIC task prop (contextual add) */}
                     {!task && (
                         <div className="space-y-4">
                             <div className="space-y-2">
