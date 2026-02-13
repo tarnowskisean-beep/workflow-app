@@ -11,6 +11,7 @@ export const authConfig = {
             // Define public pages
             const isPublicPage = isLoginPage
 
+
             console.log("Middleware Auth Check:", {
                 pathname: nextUrl.pathname,
                 isLoggedIn,

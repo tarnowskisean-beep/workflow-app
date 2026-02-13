@@ -21,6 +21,7 @@ import { createTask } from "@/actions/task-actions"
 import { useTransition, useState } from "react"
 import { useRouter } from "next/navigation"
 import { taskSchema, type TaskFormValues } from "@/lib/schemas"
+import { TASK_STATUS, PRIORITY } from "@/lib/constants"
 
 export function TaskForm() {
     // const router = useRouter() // router unused
@@ -34,8 +35,8 @@ export function TaskForm() {
         defaultValues: {
             title: "",
             description: "",
-            status: "OPEN",
-            priority: "P2",
+            status: TASK_STATUS.OPEN,
+            priority: PRIORITY.P2,
             driveLink: "",
         },
     })
@@ -133,8 +134,8 @@ export function TaskForm() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="OPEN">Open</SelectItem>
-                                        <SelectItem value="DONE">Done</SelectItem>
+                                        <SelectItem value={TASK_STATUS.OPEN}>Open</SelectItem>
+                                        <SelectItem value={TASK_STATUS.DONE}>Done</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -155,10 +156,10 @@ export function TaskForm() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="P0">P0 (Critical)</SelectItem>
-                                        <SelectItem value="P1">P1 (High)</SelectItem>
-                                        <SelectItem value="P2">P2 (Medium)</SelectItem>
-                                        <SelectItem value="P3">P3 (Low)</SelectItem>
+                                        <SelectItem value={PRIORITY.P0}>P0 (Critical)</SelectItem>
+                                        <SelectItem value={PRIORITY.P1}>P1 (High)</SelectItem>
+                                        <SelectItem value={PRIORITY.P2}>P2 (Medium)</SelectItem>
+                                        <SelectItem value={PRIORITY.P3}>P3 (Low)</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />

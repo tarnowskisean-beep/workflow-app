@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { logSecurityEvent } from "@/lib/audit"
+import { ROLES } from "@/lib/constants"
+import { can } from "@/lib/permissions"
 
 const projectSchema = z.object({
     name: z.string().min(2),
@@ -24,8 +26,8 @@ export async function getProjects(query?: string, projectId?: string) {
         select: { role: true }
     })
 
-    const userRole = (user?.role || session.user.role || "ASSOCIATE").toUpperCase()
-    const isAdminOrManager = userRole === "ADMIN" || userRole === "MANAGER"
+    const userRole = (user?.role || session.user.role || ROLES.ASSOCIATE).toUpperCase()
+    const isAdminOrManager = userRole === ROLES.ADMIN || userRole === ROLES.MANAGER
 
     try {
         return await prisma.project.findMany({
@@ -63,7 +65,7 @@ export async function getProjectByCode(code: string) {
     const session = await auth()
     if (!session?.user?.id) return null
 
-    const isAdmin = session.user.role === "ADMIN"
+    const isAdmin = session.user.role === ROLES.ADMIN
 
     try {
         // Use findFirst to allow filtering by user access for non-admins
@@ -73,7 +75,6 @@ export async function getProjectByCode(code: string) {
                 ...(isAdmin ? {} : { users: { some: { id: session.user.id } } })
             },
             include: {
-                // @ts-ignore
                 users: {
                     select: {
                         id: true,
@@ -105,8 +106,7 @@ export async function createProject(formData: FormData) {
     if (!session?.user?.id) return { error: "Unauthorized" }
 
     // Check Global Permissions
-    const userRole = session.user.role // Assuming role is available on session user
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    if (!can(session.user, "create:project")) {
         return { error: "Only Managers and Admins can create projects." }
     }
 
@@ -142,13 +142,12 @@ export async function updateProjectAccess(code: string, userIds: string[]) {
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
 
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    if (!can(session.user, "manage:team")) {
         return { error: "Insufficient permissions to update project access." }
     }
 
     try {
-        const isAdmin = userRole === "ADMIN"
+        const isAdmin = session.user.role === ROLES.ADMIN
 
         // First verify user has access to this project
         const project = await prisma.project.findFirst({
@@ -191,8 +190,7 @@ export async function updateProjectTeam(
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
 
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    if (!can(session.user, "manage:team")) {
         return { error: "Insufficient permissions to update project settings." }
     }
 
@@ -239,8 +237,7 @@ export async function updateProjectDetails(
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
 
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
+    if (!can(session.user, "update:project")) {
         return { error: "Insufficient permissions to update project details." }
     }
 
@@ -276,8 +273,7 @@ export async function deleteProject(code: string) {
     const session = await auth()
     if (!session?.user?.id) return { error: "Unauthorized" }
 
-    const userRole = session.user.role
-    if (userRole !== "ADMIN") {
+    if (!can(session.user, "delete:project")) {
         return { error: "Only Admins can delete projects." }
     }
 

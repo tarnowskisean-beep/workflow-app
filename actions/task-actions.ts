@@ -7,12 +7,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { addDays, addWeeks, addMonths, addQuarters, addYears } from "date-fns"
 import { logSecurityEvent } from "@/lib/audit"
+import { ROLES, TASK_STATUS, PRIORITY } from "@/lib/constants"
 
 // Helper: Verify User Access to Project
 async function verifyProjectAccess(projectId: string, userId: string) {
     // 1. Check if user is Admin or Manager (Global access for now, or check specific manager role)
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
-    if (user?.role === "ADMIN") return true;
+    if (user?.role === ROLES.ADMIN) return true;
 
     // 2. Check strict membership
     const project = await prisma.project.findFirst({
@@ -27,7 +28,7 @@ async function verifyProjectAccess(projectId: string, userId: string) {
 // Helper: Verify User Access to Task (for Editing)
 async function verifyTaskAccess(taskId: string, userId: string) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } })
-    if (user?.role === "ADMIN") return true;
+    if (user?.role === ROLES.ADMIN) return true;
 
     const task = await prisma.workItem.findUnique({
         where: { id: taskId },
@@ -55,8 +56,8 @@ async function verifyTaskAccess(taskId: string, userId: string) {
 const createTaskSchema = z.object({
     title: z.string().min(1),
     description: z.string().optional(),
-    status: z.string().default("OPEN"),
-    priority: z.string().default("P2"),
+    status: z.string().default(TASK_STATUS.OPEN),
+    priority: z.string().default(PRIORITY.P2),
     driveLink: z.string().optional().nullable(),
     driveLinkType: z.string().optional().nullable(),
     requiresDocument: z.boolean().default(false),
@@ -96,8 +97,8 @@ export async function createTask(formData: FormData) {
     const rawData = {
         title: formData.get("title"),
         description: formData.get("description"),
-        status: formData.get("status") || "OPEN",
-        priority: formData.get("priority") || "P2",
+        status: formData.get("status") || TASK_STATUS.OPEN,
+        priority: formData.get("priority") || PRIORITY.P2,
         driveLink: formData.get("driveLink"),
         driveLinkType: formData.get("driveLinkType"),
         requiresDocument: formData.get("requiresDocument") === "on",
@@ -173,7 +174,7 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
         if (!task) return { success: false, message: "Task not found" }
 
         // Logic check: If marking as DONE and requiresDocument is true, must have driveLink
-        if (newStatus === "DONE" && task.requiresDocument && !task.driveLink) {
+        if (newStatus === TASK_STATUS.DONE && task.requiresDocument && !task.driveLink) {
             return {
                 success: false,
                 message: "Document required to complete this task.",
@@ -182,7 +183,7 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
         }
 
         // Handle Recurrence Logic
-        if (newStatus === "DONE" && task.isRecurring && task.recurrenceInterval) {
+        if (newStatus === TASK_STATUS.DONE && task.isRecurring && task.recurrenceInterval) {
             const nextDueDate = calculateNextDueDate(new Date(), task.recurrenceInterval, task.recurrenceDays)
 
             // Spawn next task
@@ -190,7 +191,7 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
                 data: {
                     title: task.title,
                     description: task.description,
-                    status: "OPEN",
+                    status: TASK_STATUS.OPEN,
                     priority: task.priority,
                     projectId: task.projectId,
                     assigneeId: task.assigneeId, // Keep same assignee
@@ -210,7 +211,7 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
             where: { id: taskId },
             data: {
                 status: newStatus,
-                completedAt: newStatus === "DONE" ? new Date() : null
+                completedAt: newStatus === TASK_STATUS.DONE ? new Date() : null
             }
         })
 
@@ -321,16 +322,16 @@ export async function getWorkItems(filters?: {
     // @ts-ignore
     const userWithReports = user as any
 
-    if (user.role === "SENIOR") {
+    if (user.role === ROLES.SENIOR) {
         // Seniors see themselves + direct reports (Associates)
         const reportIds = userWithReports.directReports.map((u: any) => u.id)
         accessibleUserIds = [...accessibleUserIds, ...reportIds]
-    } else if (user.role === "MANAGER") {
+    } else if (user.role === ROLES.MANAGER) {
         // Managers see themselves + direct reports (Seniors) + reports' reports (Associates)
         const directReportIds = userWithReports.directReports.map((u: any) => u.id)
         const secondLevelReportIds = userWithReports.directReports.flatMap((u: any) => u.directReports.map((sub: any) => sub.id))
         accessibleUserIds = [...accessibleUserIds, ...directReportIds, ...secondLevelReportIds]
-    } else if (user.role === "ADMIN") {
+    } else if (user.role === ROLES.ADMIN) {
         // Admin sees all? Or restrict too? 
         // Assuming Admin sees all for now, or just let's stick to strict hierarchy requested.
         // User asked for Manager/Senior/Associate.
@@ -351,7 +352,7 @@ export async function getWorkItems(filters?: {
     }
 
     // Apply Access Control
-    if (user.role !== "ADMIN") {
+    if (user.role !== ROLES.ADMIN) {
         whereClause.assigneeId = { in: accessibleUserIds }
     } else {
         // If filter is specific assignee, respect it. Otherwise show all.
@@ -361,7 +362,7 @@ export async function getWorkItems(filters?: {
     }
 
     // Also respect filter if it's stricter than access control
-    if (filters?.assigneeId && user.role !== "ADMIN") {
+    if (filters?.assigneeId && user.role !== ROLES.ADMIN) {
         if (accessibleUserIds.includes(filters.assigneeId)) {
             whereClause.assigneeId = filters.assigneeId
         } else {
@@ -416,18 +417,18 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
             if (currentTask && currentUser) {
                 // Skip check if assignee hasn't changed
                 if (currentTask.assigneeId !== rawData.assigneeId) {
-                    const isManagerOrAdmin = currentUser.role === "MANAGER" || currentUser.role === "ADMIN"
-                    const isSenior = currentUser.role === "SENIOR"
+                    const isManagerOrAdmin = currentUser.role === ROLES.MANAGER || currentUser.role === ROLES.ADMIN
+                    const isSenior = currentUser.role === ROLES.SENIOR
 
                     // If current task has an assignee, check their role. If unassigned, any Senior+ can pick it up.
-                    const currentAssigneeRole = currentTask.assignee?.role || "ASSOCIATE"
+                    const currentAssigneeRole = currentTask.assignee?.role || ROLES.ASSOCIATE
 
                     // Allow if:
                     // 1. User is Manager or Admin
                     // 2. User is Senior AND (Target is unassigned OR Target is Associate)
                     // 3. User is assigning to themselves? (Self-assignment usually allowed if empty, implementing strict rule for now)
 
-                    const canChange = isManagerOrAdmin || (isSenior && (currentAssigneeRole === "ASSOCIATE" || !currentTask.assigneeId))
+                    const canChange = isManagerOrAdmin || (isSenior && (currentAssigneeRole === ROLES.ASSOCIATE || !currentTask.assigneeId))
 
                     if (!canChange) {
                         return { success: false, message: "You do not have permission to reassign this task." }
