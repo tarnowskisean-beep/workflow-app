@@ -19,7 +19,7 @@ const ReportParamsSchema = z.object({
 // Define the shape of the time entry with included relations for reports
 type TimeEntryWithRelations = Prisma.TimeEntryGetPayload<{
     include: {
-        project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true } },
+        project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true, managerId: true, seniorId: true, associateId: true } },
         user: { select: { id: true, name: true, role: true, billableRate: true, avatarUrl: true } },
         workItem: { select: { id: true, title: true } }
     }
@@ -135,7 +135,7 @@ export async function getTimeReport(from: Date, to: Date, projectId?: string, us
     const entries: TimeEntryWithRelations[] = await prisma.timeEntry.findMany({
         where,
         include: {
-            project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true } },
+            project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true, managerId: true, seniorId: true, associateId: true } },
             user: { select: { id: true, name: true, role: true, billableRate: true, avatarUrl: true } },
             workItem: { select: { id: true, title: true } }
         },
@@ -157,7 +157,10 @@ export async function getTimeReport(from: Date, to: Date, projectId?: string, us
         if (entry.isBillable && entry.project) {
             const proj = entry.project
             const user = entry.user
-            if (user.role === "MANAGER") rate = proj.managerRate || proj.billableRate || user.billableRate || 0
+            if (user.id === proj.managerId) rate = proj.managerRate || proj.billableRate || user.billableRate || 0
+            else if (user.id === proj.seniorId) rate = proj.seniorRate || proj.billableRate || user.billableRate || 0
+            else if (user.id === proj.associateId) rate = proj.associateRate || proj.billableRate || user.billableRate || 0
+            else if (user.role === "ADMIN" || user.role === "MANAGER") rate = proj.managerRate || proj.billableRate || user.billableRate || 0
             else if (user.role === "SENIOR") rate = proj.seniorRate || proj.billableRate || user.billableRate || 0
             else if (user.role === "ASSOCIATE") rate = proj.associateRate || proj.billableRate || user.billableRate || 0
             else rate = proj.billableRate || user.billableRate || 0
@@ -241,7 +244,7 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
     const rawEntries: TimeEntryWithRelations[] = await prisma.timeEntry.findMany({
         where,
         include: {
-            project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true } },
+            project: { select: { id: true, name: true, billableRate: true, managerRate: true, seniorRate: true, associateRate: true, isBillable: true, managerId: true, seniorId: true, associateId: true } },
             user: { select: { id: true, name: true, role: true, billableRate: true, avatarUrl: true } },
             workItem: { select: { id: true, title: true } }
         },
@@ -276,7 +279,10 @@ export async function getComprehensiveReport(from: Date, to: Date, projectId?: s
             if (!proj) {
                 rate = user.billableRate || 0
             } else {
-                if (user.role === "MANAGER") rate = proj.managerRate || proj.billableRate || user.billableRate || 0
+                if (user.id === proj.managerId) rate = proj.managerRate || proj.billableRate || user.billableRate || 0
+                else if (user.id === proj.seniorId) rate = proj.seniorRate || proj.billableRate || user.billableRate || 0
+                else if (user.id === proj.associateId) rate = proj.associateRate || proj.billableRate || user.billableRate || 0
+                else if (user.role === "ADMIN" || user.role === "MANAGER") rate = proj.managerRate || proj.billableRate || user.billableRate || 0
                 else if (user.role === "SENIOR") rate = proj.seniorRate || proj.billableRate || user.billableRate || 0
                 else if (user.role === "ASSOCIATE") rate = proj.associateRate || proj.billableRate || user.billableRate || 0
                 else rate = proj.billableRate || user.billableRate || 0
