@@ -1,5 +1,6 @@
-
 "use client"
+
+import { RecurrencePicker, RecurrenceInterval } from "./recurrence-picker"
 
 import { useState, useEffect } from "react"
 import { useFormStatus } from "react-dom"
@@ -45,7 +46,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { cn } from "@/lib/utils"
-import { updateTaskDetails, updateTaskStatus } from "@/actions/task-actions"
+import { updateTaskDetails, updateTaskStatus, deleteTask } from "@/actions/task-actions"
 import { logTime } from "@/actions/time-actions"
 import { TimeLogDialog } from "@/components/work/time-log-dialog"
 import { User } from "@prisma/client"
@@ -79,6 +80,8 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
     const [description, setDescription] = useState(task?.description || "")
     const [taskType, setTaskType] = useState(task?.taskType || "")
     const [driveLink, setDriveLink] = useState(task?.driveLink || "")
+    const [recurrenceInterval, setRecurrenceInterval] = useState<RecurrenceInterval>(task?.recurrenceInterval || null)
+    const [recurrenceDays, setRecurrenceDays] = useState<string[]>(task?.recurrenceDays ? task.recurrenceDays.split(',') : [])
 
     // Parse allowed task types from project
     const allowedTaskTypes = task?.project?.allowedTaskTypes
@@ -112,6 +115,8 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
             setDescription(task.description || "")
             setTaskType(task.taskType || "")
             setDriveLink(task.driveLink || "")
+            setRecurrenceInterval(task.recurrenceInterval || null)
+            setRecurrenceDays(task.recurrenceDays ? task.recurrenceDays.split(',') : [])
         }
     }, [task, open])
 
@@ -134,13 +139,24 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
     }
 
     // Explicit save for immediate interactions (Select, DatePicker) to avoid stale state in closures
-    async function saveProperty(updates: { assigneeId?: string, priority?: string, taskType?: string, dueDate?: Date, title?: string, description?: string }) {
+    async function saveProperty(updates: {
+        assigneeId?: string,
+        priority?: string,
+        taskType?: string,
+        dueDate?: Date,
+        title?: string,
+        description?: string,
+        recurrenceInterval?: RecurrenceInterval,
+        recurrenceDays?: string[]
+    }) {
         // 1. Optimistic Update
         if (updates.assigneeId !== undefined) setAssigneeId(updates.assigneeId)
         if (updates.priority !== undefined) setPriority(updates.priority)
         if (updates.taskType !== undefined) setTaskType(updates.taskType)
         if (updates.dueDate !== undefined) setDueDate(updates.dueDate)
         if (updates.title !== undefined) setTitle(updates.title)
+        if (updates.recurrenceInterval !== undefined) setRecurrenceInterval(updates.recurrenceInterval)
+        if (updates.recurrenceDays !== undefined) setRecurrenceDays(updates.recurrenceDays)
 
         // 2. Prepare Data using Overrides
         const formData = new FormData()
@@ -148,6 +164,14 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
         formData.set("description", updates.description ?? description)
         formData.set("priority", updates.priority ?? priority)
         formData.set("taskType", updates.taskType ?? taskType)
+
+        // Handle Recurrence
+        const rInterval = updates.recurrenceInterval !== undefined ? updates.recurrenceInterval : recurrenceInterval
+        const rDays = updates.recurrenceDays !== undefined ? updates.recurrenceDays : recurrenceDays
+
+        formData.set("isRecurring", !!rInterval ? "true" : "false")
+        if (rInterval) formData.set("recurrenceInterval", rInterval)
+        if (rDays && rDays.length > 0) formData.set("recurrenceDays", rDays.join(","))
 
         const d = updates.dueDate !== undefined ? updates.dueDate : dueDate
         if (d) formData.set("dueDate", d.toISOString())
@@ -210,6 +234,33 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
         navigator.clipboard.writeText(url)
         // Could show toast here
         alert("Link copied to clipboard")
+    }
+
+    const handleDelete = async () => {
+        if (confirm("Are you sure you want to delete this task? This cannot be undone.")) {
+            const result = await deleteTask(task.id)
+            if (result.success) {
+                onOpenChange(false)
+                router.refresh()
+            } else {
+                alert(result.message)
+            }
+        }
+    }
+
+    // Wrapped handlers for RecurrencePicker
+    const handleRecurrenceChange = (interval: RecurrenceInterval) => {
+        // We need to save the interval immediately, but if it changes to null, clear days too
+        // If it changes to something else, days might be invalid or need reset, but UI handles that via `setDays([])` in picker usually?
+        // Let's rely on picker's visual `onDaysChange([])` call if interval changes? 
+        // Actually RecurrencePicker does `if (int.value !== interval) onDaysChange([])` locally? No callback there?
+        // Wait, RecurrencePicker calls `onDaysChange([])` inside its select handler. 
+        // So we just save the interval here.
+        saveProperty({ recurrenceInterval: interval })
+    }
+
+    const handleRecurrenceDaysChange = (days: string[]) => {
+        saveProperty({ recurrenceDays: days })
     }
 
     return (
@@ -425,10 +476,25 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Recurrence (New) - Inside Grid */}
+                                <div className="col-span-12 pt-4 border-t mt-2">
+                                    <RecurrencePicker
+                                        interval={recurrenceInterval}
+                                        onIntervalChange={handleRecurrenceChange}
+                                        days={recurrenceDays}
+                                        onDaysChange={handleRecurrenceDaysChange}
+                                    />
+                                    {recurrenceInterval && (
+                                        <p className="text-[10px] text-muted-foreground mt-2 bg-blue-50 text-blue-700 p-2 rounded border border-blue-100">
+                                            Adjusting this recurrence rule will affect future recurring tasks generated after this one is completed.
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Description */}
-                            <div className="space-y-4 pt-6 border-t mt-4">
+                            <div className="space-y-4 pt-6 border-t">
                                 <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
                                     Description
                                 </Label>
@@ -440,6 +506,22 @@ export function TaskDetailSheet({ task, open, onOpenChange, users, currentUserRo
                                     className="min-h-[240px] bg-muted/20 border-transparent hover:bg-muted/40 focus:bg-background focus:border-input focus:ring-1 focus:ring-primary/20 p-4 rounded-xl text-sm leading-relaxed resize-none transition-all placeholder:text-muted-foreground/50 disabled:opacity-70 disabled:cursor-not-allowed"
                                     placeholder="Add tasks details, notes, and requirements..."
                                 />
+                            </div>
+
+                            {/* Delete Danger Zone */}
+                            <div className="pt-6 border-t mt-4">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 text-xs justify-start px-0"
+                                    onClick={handleDelete}
+                                    disabled={!canEditProperties}
+                                >
+                                    <div className="flex items-center gap-2 px-3 py-2">
+                                        <span className="font-semibold">Delete Task</span>
+                                        {recurrenceInterval && <span className="font-normal opacity-80">(Stops Recurrence)</span>}
+                                    </div>
+                                </Button>
                             </div>
 
                         </div>

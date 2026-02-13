@@ -365,7 +365,13 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
             taskType: formData.get("taskType") as string || null,
         }
 
+        const isRecurring = formData.get("isRecurring") === "true"
+        const recurrenceInterval = formData.get("recurrenceInterval") as string || null
+        const recurrenceDays = formData.get("recurrenceDays") as string || null
+
         console.log("SERVER ACTION: updateTaskDetails", { taskId, rawData })
+
+
 
         // Permission Check for Assignee Change
         if (rawData.assigneeId !== undefined && rawData.assigneeId !== null) { // Check if assigneeId is being updated
@@ -410,7 +416,11 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
                 priority: rawData.priority,
                 dueDate: rawData.dueDate,
                 assigneeId: rawData.assigneeId,
-                taskType: rawData.taskType
+                taskType: rawData.taskType,
+                // Recurrence updates
+                isRecurring: isRecurring,
+                recurrenceInterval: recurrenceInterval,
+                recurrenceDays: recurrenceDays,
             }
         })
 
@@ -423,5 +433,28 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
     } catch (error) {
         console.error("Failed to update task details:", error)
         return { success: false, message: "Failed to update task" }
+    }
+}
+
+export async function deleteTask(taskId: string) {
+    const session = await auth()
+    if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+
+    const canAccess = await verifyTaskAccess(taskId, session.user.id)
+    if (!canAccess) return { success: false, message: "Unauthorized access to task" }
+
+    try {
+        await prisma.workItem.delete({
+            where: { id: taskId }
+        })
+
+        await logSecurityEvent("TASK_DELETED", "TASK", taskId, { deletedBy: session.user.id })
+
+        revalidatePath("/work")
+        revalidatePath("/dashboard")
+        return { success: true, message: "Task deleted" }
+    } catch (error) {
+        console.error("Failed to delete task:", error)
+        return { success: false, message: "Failed to delete task" }
     }
 }
