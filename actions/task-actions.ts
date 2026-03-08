@@ -9,6 +9,7 @@ import { addDays, addWeeks, addMonths, addQuarters, addYears } from "date-fns"
 import { logSecurityEvent } from "@/lib/audit"
 import { ROLES, TASK_STATUS, PRIORITY } from "@/lib/constants"
 import { calculateFirstInstance, calculateNextDueDate } from "@/lib/recurrence"
+import { checkActionAuth } from "@/lib/auth-utils"
 
 // Helper: Verify User Access to Project
 async function verifyProjectAccess(projectId: string, userId: string) {
@@ -89,9 +90,9 @@ const createTaskSchema = z.object({
 })
 
 export async function createTask(formData: FormData) {
-    const session = await auth()
+    const { session, error } = await checkActionAuth()
 
-    if (!session?.user?.id) {
+    if (error || !session?.user?.id) {
         return { success: false, message: "Unauthorized" }
     }
 
@@ -190,8 +191,8 @@ export async function createTask(formData: FormData) {
 }
 
 export async function updateTaskStatus(taskId: string, newStatus: string) {
-    const session = await auth()
-    if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+    const { session, error } = await checkActionAuth()
+    if (error || !session?.user?.id) return { success: false, message: "Unauthorized" }
 
     const canAccess = await verifyTaskAccess(taskId, session.user.id)
     if (!canAccess) return { success: false, message: "Unauthorized access to task" }
@@ -256,8 +257,8 @@ export async function updateTaskStatus(taskId: string, newStatus: string) {
 
 
 export async function addDocumentLink(taskId: string, link: string) {
-    const session = await auth()
-    if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+    const { session, error } = await checkActionAuth()
+    if (error || !session?.user?.id) return { success: false, message: "Unauthorized" }
 
     const canAccess = await verifyTaskAccess(taskId, session.user.id)
     if (!canAccess) return { success: false, message: "Unauthorized access to task" }
@@ -288,8 +289,8 @@ export async function getWorkItems(filters?: {
     status?: string
     search?: string
 }) {
-    const session = await auth()
-    if (!session?.user?.id) return []
+    const { session, error } = await checkActionAuth()
+    if (error || !session?.user?.id) return []
 
     const userId = session.user.id
 
@@ -378,8 +379,8 @@ export async function getWorkItems(filters?: {
     }
 }
 export async function updateTaskDetails(taskId: string, formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+    const { session, error } = await checkActionAuth()
+    if (error || !session?.user?.id) return { success: false, message: "Unauthorized" }
 
     const canAccess = await verifyTaskAccess(taskId, session.user.id)
     if (!canAccess) return { success: false, message: "Unauthorized access to task" }
@@ -466,8 +467,8 @@ export async function updateTaskDetails(taskId: string, formData: FormData) {
 }
 
 export async function deleteTask(taskId: string) {
-    const session = await auth()
-    if (!session?.user?.id) return { success: false, message: "Unauthorized" }
+    const { session, error } = await checkActionAuth()
+    if (error || !session?.user?.id) return { success: false, message: "Unauthorized" }
 
     const canAccess = await verifyTaskAccess(taskId, session.user.id)
     if (!canAccess) return { success: false, message: "Unauthorized access to task" }

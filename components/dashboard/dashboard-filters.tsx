@@ -9,6 +9,8 @@ import { startOfWeek, endOfWeek, format, parseISO } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { useEffect, useState } from "react"
 
+import { useFilters } from "@/hooks/use-filters"
+
 interface DashboardFiltersProps {
     projects: { id: string; name: string }[]
     users: { id: string; name: string | null }[]
@@ -16,7 +18,7 @@ interface DashboardFiltersProps {
 
 export function DashboardFilters({ projects, users }: DashboardFiltersProps) {
     const router = useRouter()
-    const searchParams = useSearchParams()
+    const { searchParams, updateFilter } = useFilters("/dashboard")
 
     const currentProjectId = searchParams.get("projectId") || "all"
     const currentUserId = searchParams.get("userId") || "all"
@@ -40,17 +42,6 @@ export function DashboardFilters({ projects, users }: DashboardFiltersProps) {
             to: endOfWeek(today)
         }
     })
-
-
-    const updateFilter = (key: string, value: string) => {
-        const params = new URLSearchParams(searchParams.toString())
-        if (value && value !== "all") {
-            params.set(key, value)
-        } else {
-            params.delete(key)
-        }
-        router.push(`/dashboard?${params.toString()}`)
-    }
 
     // Effect to update URL when date changes
     useEffect(() => {

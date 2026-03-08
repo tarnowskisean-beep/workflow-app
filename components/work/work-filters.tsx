@@ -19,30 +19,10 @@ type FilterProps = {
     users: { id: string, name: string | null }[]
 }
 
+import { useFilters } from "@/hooks/use-filters"
+
 export function WorkFilters({ projects, users }: FilterProps) {
-    const searchParams = useSearchParams()
-    const router = useRouter()
-
-    const updateFilter = (key: string, value: string) => {
-        const params = new URLSearchParams(searchParams.toString())
-        if (value && value !== "all") {
-            params.set(key, value)
-        } else {
-            params.delete(key)
-        }
-
-        // If setting assignee filter (specific or all), clear 'view=mine' to avoid confusion/conflict
-        if (key === 'assigneeId') {
-            params.delete('view')
-        }
-
-        // If toggling 'view=mine', clear specific assignee filter
-        if (key === 'view' && value === 'mine') {
-            params.delete('assigneeId')
-        }
-
-        router.replace(`/work?${params.toString()}`, { scroll: false })
-    }
+    const { searchParams, updateFilter } = useFilters("/work")
 
     const currentView = searchParams.get("display") || "list"
     const currentPeriod = searchParams.get("period") || "all"

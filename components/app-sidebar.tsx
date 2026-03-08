@@ -35,6 +35,11 @@ const items = [
         icon: CheckSquare,
     },
     {
+        title: "Schedule",
+        url: "/schedule",
+        icon: Calendar,
+    },
+    {
         title: "Time",
         url: "/time",
         icon: FileClock,

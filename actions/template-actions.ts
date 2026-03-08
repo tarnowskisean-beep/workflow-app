@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { addDays } from "date-fns"
+import { requireRole, checkActionRole, requireAuth } from "@/lib/auth-utils"
 
 const templateGroupSchema = z.object({
     name: z.string().min(2),
@@ -30,8 +31,9 @@ const updateTaskSchema = templateTaskSchema.partial().omit({ groupId: true })
 // --- Management Actions ---
 
 export async function getTemplateGroups() {
-    const session = await auth()
-    if (!session?.user?.id) return []
+    try {
+        await requireAuth()
+    } catch { return [] }
 
     try {
         return await prisma.taskTemplateGroup.findMany({
@@ -45,13 +47,8 @@ export async function getTemplateGroups() {
 }
 
 export async function createTemplateGroup(formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.id) return { error: "Unauthorized" }
-
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        return { error: "Only Managers and Admins can create template groups." }
-    }
+    const { error } = await checkActionRole(["MANAGER", "ADMIN"])
+    if (error) return { error }
 
     const rawData = {
         name: formData.get("name"),
@@ -70,19 +67,14 @@ export async function createTemplateGroup(formData: FormData) {
         })
         revalidatePath("/templates")
         return { success: true }
-    } catch (error) {
+    } catch (e) {
         return { error: "Failed to create template group" }
     }
 }
 
 export async function addTaskToGroup(formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.id) return { error: "Unauthorized" }
-
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        return { error: "Only Managers and Admins can add templates." }
-    }
+    const { error } = await checkActionRole(["MANAGER", "ADMIN"])
+    if (error) return { error }
 
     const rawData = {
         groupId: formData.get("groupId"),
@@ -116,21 +108,15 @@ export async function addTaskToGroup(formData: FormData) {
         revalidatePath("/templates")
         revalidatePath(`/templates/${validated.data.groupId}`)
         return template
-    } catch (error) {
-        console.error(error)
+    } catch (e) {
+        console.error(e)
         return { error: "Failed to add task template" }
     }
 }
 
 // Helper for client-side direct creation (used in Editor)
 export async function addTaskTemplate(groupId: string, data: Partial<z.infer<typeof templateTaskSchema>>) {
-    const session = await auth()
-    if (!session?.user?.id) throw new Error("Unauthorized")
-
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        throw new Error("Insufficient permissions")
-    }
+    await requireRole(["MANAGER", "ADMIN"])
 
     // Set defaults
     const taskData = {
@@ -159,13 +145,7 @@ export async function addTaskTemplate(groupId: string, data: Partial<z.infer<typ
 }
 
 export async function updateTaskTemplate(templateId: string, data: Partial<z.infer<typeof templateTaskSchema>>) {
-    const session = await auth()
-    if (!session?.user?.id) throw new Error("Unauthorized")
-
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        throw new Error("Insufficient permissions")
-    }
+    await requireRole(["MANAGER", "ADMIN"])
 
     try {
         const template = await prisma.taskTemplate.update({
@@ -181,13 +161,7 @@ export async function updateTaskTemplate(templateId: string, data: Partial<z.inf
 }
 
 export async function deleteTaskTemplate(templateId: string) {
-    const session = await auth()
-    if (!session?.user?.id) throw new Error("Unauthorized")
-
-    const userRole = session.user.role
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        throw new Error("Insufficient permissions")
-    }
+    await requireRole(["MANAGER", "ADMIN"])
 
     try {
         const template = await prisma.taskTemplate.delete({
@@ -218,13 +192,8 @@ const assignTemplateSchema = z.object({
 })
 
 export async function assignTemplate(formData: FormData) {
-    const session = await auth()
-    if (!session?.user?.id) return { error: "Unauthorized" }
-
-    const userRole = session.user.role // Assuming role is available on session user
-    if (userRole !== "MANAGER" && userRole !== "ADMIN") {
-        return { error: "Only Managers and Admins can assign workflows." }
-    }
+    const { error } = await checkActionRole(["MANAGER", "ADMIN"])
+    if (error) return { error }
 
     const rawData = {
         groupId: formData.get("groupId"),
